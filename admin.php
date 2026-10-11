@@ -1,5 +1,21 @@
 <?php
 session_start();
+$usersFile = __DIR__ . '/data/users.json';
+$isAdmin = false;
+if (!empty($_SESSION['user_id']) && empty($_SESSION['logged_out']) && file_exists($usersFile)) {
+    $users = json_decode(file_get_contents($usersFile), true) ?: [];
+    foreach ($users as $u) {
+        if ($u['id'] === $_SESSION['user_id'] && ($u['role'] ?? '') === 'ADMIN') {
+            $isAdmin = true;
+            break;
+        }
+    }
+}
+
+if (!$isAdmin) {
+    header('Location: index.php?login=required');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">

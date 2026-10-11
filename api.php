@@ -197,7 +197,6 @@ function getCurrentUser() {
     $users = getUsers();
     if (empty($users)) return null;
 
-    // Si l'utilisateur s'est explicitement déconnecté, ne pas ré-authentifier automatiquement
     if (!empty($_SESSION['logged_out'])) {
         return null;
     }
@@ -211,22 +210,8 @@ function getCurrentUser() {
         }
     }
 
-    // Fallback : Authentifier automatiquement le premier compte Administrateur si aucune session n'est encore active
-    // (seulement si l'utilisateur ne s'est pas explicitement déconnecté)
-    foreach ($users as $u) {
-        if (($u['role'] ?? '') === 'ADMIN') {
-            $_SESSION['user_id'] = $u['id'];
-            $_SESSION['logged_out'] = false;
-            unset($u['password_hash']);
-            return $u;
-        }
-    }
-
-    $_SESSION['user_id'] = $users[0]['id'];
-    $_SESSION['logged_out'] = false;
-    $defaultUser = $users[0];
-    unset($defaultUser['password_hash']);
-    return $defaultUser;
+    // Aucun utilisateur connecté par défaut (sécurité : pas d'auto-connexion en Admin)
+    return null;
 }
 
 // --- GOOGLE PLACES API SYNC ENGINE ---
@@ -708,6 +693,10 @@ if ($action === 'visits') {
 
 if ($action === 'record_visit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentUser = getCurrentUser();
+    if (!$currentUser) {
+        echo json_encode(['success' => false, 'error' => 'Veuillez vous connecter pour enregistrer une visite.']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 
     $restaurantId = $input['restaurant_id'] ?? '';

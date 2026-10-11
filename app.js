@@ -45,9 +45,22 @@ const App = {
     await this.loadData();
     this.renderCurrentTab();
 
-    // Polling de synchronisation live toutes les 6 secondes
+    // Vérifier si redirection depuis admin.php
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('login') === 'required') {
+      this.showToast('Accès restreint. Veuillez vous connecter avec un compte Administrateur.', 'warning');
+    }
+
+    // Si aucun utilisateur n'est connecté, forcer l'affichage de la modale de connexion
+    if (!this.state.currentUser) {
+      this.openAuthModal('login');
+    }
+
+    // Polling de synchronisation live toutes les 6 secondes (seulement si connecté)
     setInterval(() => {
-      this.loadData(true);
+      if (this.state.currentUser) {
+        this.loadData(true);
+      }
     }, 6000);
   },
 
@@ -2357,10 +2370,22 @@ const App = {
   openAuthModal() {
     const modal = document.getElementById('authModal');
     if (!modal) return;
+    const closeBtn = document.getElementById('authModalCloseBtn');
+    if (closeBtn) {
+      if (!this.state.currentUser) {
+        closeBtn.classList.add('hidden');
+      } else {
+        closeBtn.classList.remove('hidden');
+      }
+    }
     modal.classList.remove('hidden');
   },
 
   closeAuthModal() {
+    if (!this.state.currentUser) {
+      this.showToast('Veuillez vous connecter pour accéder à l\'application', 'warning');
+      return;
+    }
     const modal = document.getElementById('authModal');
     if (modal) modal.classList.add('hidden');
   },
@@ -2401,6 +2426,7 @@ const App = {
         this.closeAuthModal();
         this.showToast(`Bienvenue ${res.user.name} ! Session active.`, 'success');
         await this.loadData();
+        this.renderCurrentTab();
       } else {
         alert(res.error || 'Erreur lors de la connexion');
       }

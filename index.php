@@ -964,7 +964,7 @@
     <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-brand-border flex flex-col">
       <!-- Auth Header avec Logo Officiel Menu Scan -->
       <div class="bg-brand-dark p-6 text-white flex flex-col items-center text-center relative border-b border-white/10">
-        <button class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 text-white hover:bg-white/25 flex items-center justify-center transition-colors" onclick="App.closeAuthModal()" type="button">
+        <button id="authModalCloseBtn" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 text-white hover:bg-white/25 flex items-center justify-center transition-colors" onclick="App.closeAuthModal()" type="button">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
         <div class="bg-white p-2 rounded-2xl shadow-md mb-2.5 flex items-center justify-center">
