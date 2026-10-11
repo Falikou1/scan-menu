@@ -1,0 +1,6 @@
+.git
+.gitignore
+stitch_source/
+*.log
+*.tmp
+*.bak
