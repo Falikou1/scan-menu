@@ -45,23 +45,17 @@ const App = {
     await this.loadData();
     this.renderCurrentTab();
 
-    // Vérifier si redirection depuis admin.php
+    // Si redirection depuis admin.php (tentative d'accès non autorisé)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('login') === 'required') {
       this.showToast('Accès restreint. Veuillez vous connecter avec un compte Administrateur.', 'warning');
-    }
-
-    // Si aucun utilisateur n'est connecté, forcer l'affichage de la modale de connexion
-    if (!this.state.currentUser) {
       this.openAuthModal('login');
     }
 
-    // Polling de synchronisation live toutes les 6 secondes (seulement si connecté)
+    // Polling de synchronisation live toutes les 15 secondes
     setInterval(() => {
-      if (this.state.currentUser) {
-        this.loadData(true);
-      }
-    }, 6000);
+      this.loadData(true);
+    }, 15000);
   },
 
   initUserGeolocation() {
@@ -126,37 +120,47 @@ const App = {
       this.updateUserUI();
     } catch (e) {
       console.warn('Erreur vérification session auth:', e);
+      this.state.currentUser = null;
+      this.updateUserUI();
     }
   },
 
   updateUserUI() {
     const user = this.state.currentUser;
 
+    const sidebarGuestCard = document.getElementById('sidebarGuestCard');
+    const sidebarUserCard = document.getElementById('sidebarUserCard');
+    const headerLoginBtn = document.getElementById('headerLoginBtn');
+    const headerUserProfile = document.getElementById('headerUserProfile');
+
     const sidebarUserName = document.getElementById('sidebarUserName');
     const sidebarUserRole = document.getElementById('sidebarUserRole');
     const sidebarAvatarInitial = document.getElementById('sidebarAvatarInitial');
-    const sidebarLogoutBtn = document.getElementById('sidebarLogoutBtn');
 
     const headerUserName = document.getElementById('headerUserName');
     const headerAvatarInitial = document.getElementById('headerAvatarInitial');
     const visitModalAvatar = document.getElementById('visitModalAvatar');
     const reportModalAvatar = document.getElementById('reportModalAvatar');
+    const sidebarAdminNavItem = document.getElementById('sidebarAdminNavItem');
 
     if (user) {
       const initial = (user.name || 'U').charAt(0).toUpperCase();
       const roleTag = user.role === 'ADMIN' ? 'Boss / Admin' : 'Agent Commercial';
 
+      if (sidebarGuestCard) sidebarGuestCard.classList.add('hidden');
+      if (sidebarUserCard) sidebarUserCard.classList.remove('hidden');
+      if (headerLoginBtn) headerLoginBtn.classList.add('hidden');
+      if (headerUserProfile) headerUserProfile.classList.remove('hidden');
+
       if (sidebarUserName) sidebarUserName.textContent = user.name;
       if (sidebarUserRole) sidebarUserRole.textContent = roleTag;
       if (sidebarAvatarInitial) sidebarAvatarInitial.textContent = initial;
-      if (sidebarLogoutBtn) sidebarLogoutBtn.classList.remove('hidden');
 
       if (headerUserName) headerUserName.textContent = user.name;
       if (headerAvatarInitial) headerAvatarInitial.textContent = initial;
       if (visitModalAvatar) visitModalAvatar.textContent = initial;
       if (reportModalAvatar) reportModalAvatar.textContent = initial;
 
-      const sidebarAdminNavItem = document.getElementById('sidebarAdminNavItem');
       if (user.role === 'ADMIN') {
         if (sidebarAdminNavItem) sidebarAdminNavItem.classList.remove('hidden');
       } else {
@@ -164,17 +168,20 @@ const App = {
         if (this.state.currentTab === 'admin') this.navigateTo('accueil');
       }
     } else {
+      if (sidebarGuestCard) sidebarGuestCard.classList.remove('hidden');
+      if (sidebarUserCard) sidebarUserCard.classList.add('hidden');
+      if (headerLoginBtn) headerLoginBtn.classList.remove('hidden');
+      if (headerUserProfile) headerUserProfile.classList.add('hidden');
+
       if (sidebarUserName) sidebarUserName.textContent = 'Non connecté';
       if (sidebarUserRole) sidebarUserRole.textContent = 'Visiteur';
       if (sidebarAvatarInitial) sidebarAvatarInitial.textContent = '?';
-      if (sidebarLogoutBtn) sidebarLogoutBtn.classList.add('hidden');
 
       if (headerUserName) headerUserName.textContent = 'Se connecter';
       if (headerAvatarInitial) headerAvatarInitial.textContent = '?';
       if (visitModalAvatar) visitModalAvatar.textContent = '?';
       if (reportModalAvatar) reportModalAvatar.textContent = '?';
 
-      const sidebarAdminNavItem = document.getElementById('sidebarAdminNavItem');
       if (sidebarAdminNavItem) sidebarAdminNavItem.classList.add('hidden');
       if (this.state.currentTab === 'admin') this.navigateTo('accueil');
     }
@@ -191,10 +198,6 @@ const App = {
       if (statsRes.success) {
         this.state.stats = statsRes.stats;
         this.state.teamPerformances = statsRes.stats.team_performances || [];
-        if (statsRes.user) {
-          this.state.currentUser = statsRes.user;
-          this.updateUserUI();
-        }
       }
       if (restRes.success) this.state.restaurants = restRes.restaurants;
       if (visitsRes.success) this.state.visits = visitsRes.visits;
@@ -256,6 +259,19 @@ const App = {
   },
 
   navigateTo(tab, params = {}) {
+    // Garde de sécurité : Seul un Administrateur authentifié peut accéder à l'onglet "admin"
+    if (tab === 'admin') {
+      if (!this.state.currentUser) {
+        this.showToast('Connexion requise : Veuillez vous connecter avec un compte Administrateur.', 'warning');
+        this.openAuthModal('login');
+        return;
+      }
+      if (this.state.currentUser.role !== 'ADMIN') {
+        this.showToast('Accès refusé : Cet espace est strictement réservé aux Administrateurs.', 'error');
+        return;
+      }
+    }
+
     this.state.currentTab = tab;
     if (params.commune) this.state.selectedCommune = params.commune;
     if (params.quartier) this.state.selectedQuartier = params.quartier;
@@ -2371,21 +2387,11 @@ const App = {
     const modal = document.getElementById('authModal');
     if (!modal) return;
     const closeBtn = document.getElementById('authModalCloseBtn');
-    if (closeBtn) {
-      if (!this.state.currentUser) {
-        closeBtn.classList.add('hidden');
-      } else {
-        closeBtn.classList.remove('hidden');
-      }
-    }
+    if (closeBtn) closeBtn.classList.remove('hidden');
     modal.classList.remove('hidden');
   },
 
   closeAuthModal() {
-    if (!this.state.currentUser) {
-      this.showToast('Veuillez vous connecter pour accéder à l\'application', 'warning');
-      return;
-    }
     const modal = document.getElementById('authModal');
     if (modal) modal.classList.add('hidden');
   },
@@ -2473,9 +2479,7 @@ const App = {
       this.state.currentUser = null;
       this.updateUserUI();
       this.navigateTo('accueil');
-      this.showToast('Déconnexion effectuée', 'info');
-      // Ouvrir la modale de connexion pour permettre de se reconnecter
-      setTimeout(() => this.openAuthModal(), 800);
+      this.showToast('Déconnexion effectuée avec succès.', 'info');
     } catch (e) {
       console.error(e);
       this.showToast('Erreur lors de la déconnexion', 'error');

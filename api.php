@@ -514,6 +514,12 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($users)) {
         $role = 'ADMIN';
+    } else {
+        // Seul un ADMIN déjà connecté peut créer un autre compte ADMIN
+        $currentUser = getCurrentUser();
+        if ($role === 'ADMIN' && (!$currentUser || ($currentUser['role'] ?? '') !== 'ADMIN')) {
+            $role = 'AGENT';
+        }
     }
 
     $newUser = [
@@ -530,6 +536,7 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     saveUsers($users);
 
     $_SESSION['user_id'] = $newUser['id'];
+    $_SESSION['logged_out'] = false;
 
     unset($newUser['password_hash']);
     echo json_encode(['success' => true, 'message' => 'Compte créé avec succès !', 'user' => $newUser]);
@@ -591,6 +598,10 @@ if ($action === 'me') {
 
 if ($action === 'users') {
     $currentUser = getCurrentUser();
+    if (!$currentUser || ($currentUser['role'] ?? '') !== 'ADMIN') {
+        echo json_encode(['success' => false, 'error' => 'Accès refusé. Réservé aux administrateurs.']);
+        exit;
+    }
     $users = getUsers();
     $sanitizedUsers = array_map(function($u) {
         unset($u['password_hash']);
@@ -600,14 +611,14 @@ if ($action === 'users') {
     echo json_encode([
         'success' => true,
         'users' => $sanitizedUsers,
-        'is_admin' => ($currentUser && ($currentUser['role'] ?? '') === 'ADMIN')
+        'is_admin' => true
     ]);
     exit;
 }
 
 if ($action === 'stats') {
     $restaurants = getRestaurants();
-    echo json_encode(['success' => true, 'stats' => calculateStats($restaurants), 'user' => getCurrentUser()]);
+    echo json_encode(['success' => true, 'stats' => calculateStats($restaurants)]);
     exit;
 }
 

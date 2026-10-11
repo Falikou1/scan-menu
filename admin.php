@@ -380,7 +380,7 @@ if (!$isAdmin) {
       async logout() {
         await fetch('api.php?action=logout');
         this.currentUser = null;
-        this.showLogin();
+        window.location.href = 'index.php';
       },
 
       async loadUsers() {

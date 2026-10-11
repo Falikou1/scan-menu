@@ -248,8 +248,19 @@
         </div>
       </div>
 
-      <!-- User Profile Card -->
-      <div class="p-3 mx-4 my-4 rounded-xl bg-white/10 border border-white/10 flex items-center justify-between cursor-pointer hover:bg-white/15 transition-colors" onclick="App.toggleAuthOrProfile()">
+      <!-- User Profile / Auth Area -->
+      <div id="sidebarGuestCard" class="p-3.5 mx-4 my-4 rounded-xl bg-white/5 border border-white/10 flex flex-col gap-2.5">
+        <div class="flex items-center gap-2 text-[#D7CCC8]">
+          <span class="material-symbols-outlined text-[18px] text-brand-light">account_circle</span>
+          <span class="text-xs font-semibold">Mode Visiteur</span>
+        </div>
+        <button onclick="App.openAuthModal('login')" type="button" class="w-full py-2 px-3 rounded-lg bg-brand-light hover:bg-brand-light-hover text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95">
+          <span class="material-symbols-outlined text-[16px]">login</span>
+          <span>Se connecter</span>
+        </button>
+      </div>
+
+      <div id="sidebarUserCard" class="hidden p-3 mx-4 my-4 rounded-xl bg-white/10 border border-white/10 flex items-center justify-between cursor-pointer hover:bg-white/15 transition-colors" onclick="App.toggleAuthOrProfile()">
         <div class="flex items-center gap-3 min-w-0">
           <div class="relative flex-shrink-0">
             <div class="w-10 h-10 rounded-full bg-brand-light text-white font-bold flex items-center justify-center text-sm shadow-md" id="sidebarAvatarInitial">
@@ -258,11 +269,11 @@
             <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-brand-dark" title="En direct sur le terrain"></span>
           </div>
           <div class="flex flex-col min-w-0">
-            <span class="text-xs font-bold text-white truncate" id="sidebarUserName">Non connecté</span>
-            <span class="text-[10px] text-[#D7CCC8] uppercase font-bold tracking-wider" id="sidebarUserRole">Visiteur</span>
+            <span class="text-xs font-bold text-white truncate" id="sidebarUserName">Utilisateur</span>
+            <span class="text-[10px] text-[#D7CCC8] uppercase font-bold tracking-wider" id="sidebarUserRole">Rôle</span>
           </div>
         </div>
-        <button id="sidebarLogoutBtn" class="hidden w-8 h-8 rounded-lg hover:bg-white/15 text-[#D7CCC8] hover:text-white flex items-center justify-center transition-colors" onclick="event.stopPropagation(); App.logout();" title="Déconnexion" type="button">
+        <button id="sidebarLogoutBtn" class="w-8 h-8 rounded-lg hover:bg-white/15 text-[#D7CCC8] hover:text-white flex items-center justify-center transition-colors" onclick="event.stopPropagation(); App.logout();" title="Déconnexion" type="button">
           <span class="material-symbols-outlined text-[18px]">logout</span>
         </button>
       </div>
@@ -324,11 +335,18 @@
           <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#EFE6DC] text-[11px] font-semibold border border-white/10 mr-1">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Google Places API Integration
           </span>
-          <div class="relative flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-white/10 transition-colors" onclick="App.toggleAuthOrProfile()">
+          <button id="headerLoginBtn" onclick="App.openAuthModal('login')" class="px-3.5 py-1.5 rounded-xl bg-brand-light hover:bg-brand-light-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95" type="button">
+            <span class="material-symbols-outlined text-[18px]">login</span>
+            <span>Se connecter</span>
+          </button>
+          <div id="headerUserProfile" class="hidden relative flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-white/10 transition-colors" onclick="App.toggleAuthOrProfile()">
             <div class="w-8 h-8 rounded-full bg-brand-light text-white font-bold flex items-center justify-center text-xs ring-2 ring-brand-light/60 shadow-sm" id="headerAvatarInitial">
               ?
             </div>
-            <span class="hidden md:inline-block text-xs font-bold text-white" id="headerUserName">Non connecté</span>
+            <span class="hidden md:inline-block text-xs font-bold text-white" id="headerUserName">Utilisateur</span>
+            <button onclick="event.stopPropagation(); App.logout();" class="w-7 h-7 rounded-full hover:bg-white/20 text-[#D7CCC8] hover:text-white flex items-center justify-center transition-colors" title="Déconnexion" type="button">
+              <span class="material-symbols-outlined text-[16px]">logout</span>
+            </button>
           </div>
         </div>
       </div>
