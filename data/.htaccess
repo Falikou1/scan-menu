@@ -1,0 +1,2 @@
+# Interdire l'accès direct HTTP aux fichiers de données JSON
+Require all denied
