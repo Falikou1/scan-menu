@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8"/>
@@ -69,7 +69,7 @@
       </div>
 
       <div class="flex items-center gap-3" id="adminHeaderActions">
-        <a href="index.php" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 text-white hover:bg-white/20 text-xs font-semibold transition-all">
+        <a href="index.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 text-white hover:bg-white/20 text-xs font-semibold transition-all">
           <span class="material-symbols-outlined text-[18px]">public</span>
           <span>Voir le site</span>
         </a>
@@ -363,7 +363,7 @@
       async logout() {
         await fetch(window.API_BASE + 'api.php?action=logout');
         this.currentUser = null;
-        window.location.href = 'index.php';
+        window.location.href = 'index.html';
       },
 
       async loadUsers() {
@@ -504,7 +504,7 @@
       copyCredentials() {
         const email = document.getElementById('credEmail').textContent;
         const pass = document.getElementById('credPass').textContent;
-        const text = `Identifiants Menu Scan :\n- Email : ${email}\n- Mot de passe : ${pass}\n- Lien : ${window.location.origin}/index.php`;
+        const text = `Identifiants Menu Scan :\n- Email : ${email}\n- Mot de passe : ${pass}\n- Lien : ${window.location.origin}/index.html`;
 
         navigator.clipboard.writeText(text).then(() => {
           alert('Identifiants copiés dans le presse-papier !');

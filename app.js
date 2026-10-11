@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FieldOps — Prospection Abidjan (Engine V3 Real Places & Google Maps Platform)
  */
 
@@ -2981,7 +2981,7 @@ const App = {
   copyMainAdminCredentials() {
     const email = document.getElementById('mainCredEmail').textContent;
     const pass = document.getElementById('mainCredPass').textContent;
-    const text = `Identifiants Menu Scan :\n- Email : ${email}\n- Mot de passe : ${pass}\n- Lien : ${window.location.origin}/index.php`;
+    const text = `Identifiants Menu Scan :\n- Email : ${email}\n- Mot de passe : ${pass}\n- Lien : ${window.location.origin}/`;
 
     navigator.clipboard.writeText(text).then(() => {
       this.showToast('Identifiants copiés dans le presse-papier !', 'success');
