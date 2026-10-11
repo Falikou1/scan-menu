@@ -10,10 +10,7 @@ RUN apt-get update && apt-get install -y \
 RUN a2enmod rewrite
 
 # Configurer Apache pour autoriser .htaccess et CORS
-RUN echo '<Directory /var/www/html>\n\
-    AllowOverride All\n\
-    Require all granted\n\
-</Directory>' > /etc/apache2/conf-available/app.conf && \
+RUN printf '<Directory /var/www/html>\n    AllowOverride All\n    Require all granted\n</Directory>\n' > /etc/apache2/conf-available/app.conf && \
     a2enconf app
 
 # Définir le répertoire de travail

@@ -25,5 +25,12 @@ fi
 chown -R www-data:www-data "$DATA_DIR"
 chmod -R 775 "$DATA_DIR"
 
+# Adapter le port d'Apache si Railway définit la variable PORT
+if [ -n "$PORT" ]; then
+    echo "==> Configuration du port Apache sur $PORT..."
+    sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
+    sed -i "s/<VirtualHost \*:80>/<VirtualHost \*:$PORT>/" /etc/apache2/sites-available/*.conf
+fi
+
 echo "==> Démarrage d'Apache..."
 exec "$@"
