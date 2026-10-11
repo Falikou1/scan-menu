@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+  <meta name="description" content="Outil de prospection commerciale terrain pour restaurants - Menu Scan"/>
+  <title>Menu Scan — Prospection Abidjan</title>
+
+  <!-- Google Fonts: Inter & Material Symbols Outlined -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <style>
+    /* ============================================================
+       CUSTOM LEAFLET + MarkerCluster STYLES (Brown & Cream)
+    ============================================================ */
+    .map-cluster-icon {
+      width: 40px;
+      height: 40px;
+      background: #4E342E;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      border: 3px solid #fff;
+      box-shadow: 0 3px 12px rgba(78,52,46,.45);
+      font-family: Inter, sans-serif;
+    }
+    .leaflet-popup-content-wrapper.menuscan-popup {
+      border-radius: 14px !important;
+      box-shadow: 0 8px 30px rgba(43,29,23,.22) !important;
+      border: 1px solid #E8DDD3;
+      padding: 0;
+    }
+    .menuscan-popup .leaflet-popup-content {
+      margin: 14px;
+    }
+    .leaflet-popup-tip-container { display: none; }
+    /* MarkerCluster default override */
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+      background-color: transparent !important;
+    }
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+      background: #4E342E !important;
+      color: #fff !important;
+      font-weight: 800;
+      font-family: Inter, sans-serif;
+    }
+    .leaflet-attribution-flag { display: none; }
+    /* Ping animation for user GPS dot */
+    @keyframes ping {
+      75%, 100% { transform: scale(2); opacity: 0; }
+    }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            // ========================================================
+            // NOUVELLE CHARTE GRAPHIQUE MARRON & CRÈME (Menu Scan)
+            // ========================================================
+            "brand-dark": "#4E342E",          // Marron foncé (principale : en-tête, menu latéral, boutons principaux)
+            "brand-dark-hover": "#3E2723",    // Survol marron foncé
+            "brand-light": "#A1783F",         // Marron clair (secondaire : boutons secondaires, accents, survols)
+            "brand-light-hover": "#8C6531",   // Survol marron clair
+            "brand-cream": "#FAF6F1",         // Crème / beige très clair (fond des pages)
+            "brand-white": "#FFFFFF",         // Blanc (cartes et tableaux)
+            "brand-text": "#2B1D17",          // Texte principal
+            "brand-muted": "#75625A",         // Texte estompé / secondaire
+            "brand-border": "#E8DDD3",        // Bordures subtiles
+            "brand-warm": "#D16E31",          // Couleur accent ambre/caramel directe du QR du logo
+
+            // ========================================================
+            // COULEURS DE STATUT LISIBLES ET DISTINCTES DU MARRON
+            // ========================================================
+            "status-visited": "#16A34A",       // Vert (Visité)
+            "status-visited-bg": "#DCFCE7",
+            "status-visited-text": "#15803D",
+            "status-recall": "#EA580C",        // Orange (À rappeler / relancer)
+            "status-recall-bg": "#FFEDD5",
+            "status-recall-text": "#9A3412",
+            "status-refused": "#DC2626",       // Rouge (Refus)
+            "status-refused-bg": "#FEE2E2",
+            "status-refused-text": "#991B1B",
+            "status-pending": "#6B7280",       // Gris (À visiter)
+            "status-pending-bg": "#F3F4F6",
+            "status-pending-text": "#374151",
+
+            // ========================================================
+            // ALIAS SÉMANTIQUES (Compatibilité & Harmonie Totale)
+            // ========================================================
+            "primary": "#4E342E",
+            "primary-container": "#4E342E",
+            "on-primary": "#FFFFFF",
+            "on-primary-container": "#D7CCC8",
+            "on-primary-fixed": "#3E2723",
+            "on-primary-fixed-variant": "#5D4037",
+            "primary-fixed": "#D7CCC8",
+            "primary-fixed-dim": "#BCAAA4",
+            "secondary": "#4E342E",
+            "secondary-container": "#A1783F",
+            "secondary-fixed": "#D7CCC8",
+            "secondary-fixed-dim": "#A1783F",
+            "on-secondary": "#FFFFFF",
+            "on-secondary-container": "#FFFFFF",
+            "on-secondary-fixed": "#2B1D17",
+            "on-secondary-fixed-variant": "#4E342E",
+            "surface": "#FAF6F1",
+            "surface-dim": "#EFE6DC",
+            "surface-bright": "#FAF6F1",
+            "on-surface": "#2B1D17",
+            "on-surface-variant": "#75625A",
+            "surface-container-lowest": "#FFFFFF",
+            "surface-container-low": "#F7F2EC",
+            "surface-container": "#EFE6DC",
+            "surface-container-high": "#E5D9CC",
+            "surface-container-highest": "#DECDBE",
+            "surface-variant": "#EFE6DC",
+            "inverse-surface": "#2B1D17",
+            "inverse-on-surface": "#FAF6F1",
+            "outline": "#A8968E",
+            "outline-variant": "#DECDBE",
+            "error": "#DC2626",
+            "error-container": "#FEE2E2",
+            "on-error": "#FFFFFF",
+            "on-error-container": "#991B1B",
+            "on-tertiary-container": "#16A34A",
+            "tertiary": "#4E342E",
+            "tertiary-container": "#3E2723",
+            "tertiary-fixed": "#A1783F",
+            "tertiary-fixed-dim": "#16A34A"
+          },
+          borderRadius: {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          fontFamily: {
+            sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --brand-dark: #4E342E;
+      --brand-light: #A1783F;
+      --brand-cream: #FAF6F1;
+      --brand-white: #FFFFFF;
+      --brand-text: #2B1D17;
+      --brand-muted: #75625A;
+      --brand-border: #E8DDD3;
+      --status-visited: #16A34A;
+      --status-recall: #EA580C;
+      --status-refused: #DC2626;
+      --status-pending: #6B7280;
+    }
+    @layer base {
+      html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #FAF6F1;
+        color: #2B1D17;
+        font-family: 'Inter', sans-serif;
+      }
+      body {
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe {
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.75rem);
+      }
+      @media (min-width: 1024px) {
+        .pb-safe {
+          padding-bottom: 2rem;
+        }
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #DECDBE;
+      border-radius: 999px;
+    }
+    /* Leaflet MarkerCluster Brand Styling */
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+      background-color: rgba(161, 120, 63, 0.4) !important;
+    }
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+      background-color: #4E342E !important;
+      color: #FFFFFF !important;
+      font-weight: 800 !important;
+      font-family: 'Inter', sans-serif !important;
+      box-shadow: 0 2px 8px rgba(43,29,23,0.35) !important;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 16px !important;
+      font-family: 'Inter', sans-serif !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      box-shadow: 0 10px 25px -5px rgba(43,29,23,0.25) !important;
+      border: 1px solid #E8DDD3 !important;
+    }
+    .leaflet-popup-content {
+      margin: 0 !important;
+      line-height: normal !important;
+    }
+  </style>
+</head>
+<body class="bg-brand-cream font-sans text-brand-text flex flex-col min-h-screen select-none antialiased">
+
+  <!-- ======================================================== -->
+  <!-- SIDEBAR NAVIGATION DESKTOP (≥ 1024px)                     -->
+  <!-- ======================================================== -->
+  <aside class="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-brand-dark text-white z-50 flex-col justify-between shadow-xl border-r border-black/20">
+    <div class="flex flex-col">
+      <!-- Header Logo Sidebar -->
+      <div class="h-20 px-5 flex items-center gap-3 border-b border-white/10 cursor-pointer" onclick="App.navigateTo('accueil')">
+        <div class="bg-white rounded-xl p-1.5 shadow-md flex items-center justify-center flex-shrink-0">
+          <img alt="Menu Scan Logo" class="h-9 w-auto max-w-[130px] object-contain" src="assets/logo.png"/>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="text-white font-extrabold text-base leading-tight tracking-tight">Menu Scan</span>
+          <span class="text-[#D7CCC8] text-[10px] font-semibold tracking-wide">Prospection Abidjan</span>
+        </div>
+      </div>
+
+      <!-- User Profile Card -->
+      <div class="p-3 mx-4 my-4 rounded-xl bg-white/10 border border-white/10 flex items-center justify-between cursor-pointer hover:bg-white/15 transition-colors" onclick="App.toggleAuthOrProfile()">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="relative flex-shrink-0">
+            <div class="w-10 h-10 rounded-full bg-brand-light text-white font-bold flex items-center justify-center text-sm shadow-md" id="sidebarAvatarInitial">
+              ?
+            </div>
+            <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-brand-dark" title="En direct sur le terrain"></span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-bold text-white truncate" id="sidebarUserName">Non connecté</span>
+            <span class="text-[10px] text-[#D7CCC8] uppercase font-bold tracking-wider" id="sidebarUserRole">Visiteur</span>
+          </div>
+        </div>
+        <button id="sidebarLogoutBtn" class="hidden w-8 h-8 rounded-lg hover:bg-white/15 text-[#D7CCC8] hover:text-white flex items-center justify-center transition-colors" onclick="event.stopPropagation(); App.logout();" title="Déconnexion" type="button">
+          <span class="material-symbols-outlined text-[18px]">logout</span>
+        </button>
+      </div>
+
+      <!-- Nav Links -->
+      <nav class="flex flex-col px-3 gap-1">
+        <a class="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-200 text-white bg-brand-light shadow-md" data-nav-target="accueil" href="#">
+          <span class="material-symbols-outlined text-[22px]">home</span>
+          <span>Accueil</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 text-[#D7CCC8] hover:text-white hover:bg-white/10" data-nav-target="carte" href="#">
+          <span class="material-symbols-outlined text-[22px]">map</span>
+          <span>Carte Interactive</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 text-[#D7CCC8] hover:text-white hover:bg-white/10" data-nav-target="restaurants" href="#">
+          <span class="material-symbols-outlined text-[22px]">restaurant</span>
+          <span>Restaurants</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 text-[#D7CCC8] hover:text-white hover:bg-white/10" data-nav-target="tournee" href="#">
+          <span class="material-symbols-outlined text-[22px]">route</span>
+          <span>Tournée Optimisée</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 text-[#D7CCC8] hover:text-white hover:bg-white/10" data-nav-target="historique" href="#">
+          <span class="material-symbols-outlined text-[22px]">history</span>
+          <span>Historique Visites</span>
+        </a>
+        <a class="hidden flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 text-amber-300 hover:text-white hover:bg-white/10 border border-amber-500/30 bg-amber-950/20" id="sidebarAdminNavItem" data-nav-target="admin" href="#">
+          <span class="material-symbols-outlined text-[22px] text-amber-400">admin_panel_settings</span>
+          <span>Administration</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom Action -->
+    <div class="p-4 border-t border-white/10 flex flex-col gap-2">
+      <button class="w-full h-11 rounded-xl bg-brand-light hover:bg-brand-light-hover text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]" onclick="App.navigateTo('tournee')" type="button">
+        <span class="material-symbols-outlined text-[20px]">near_me</span>
+        <span>Démarrer Tournée</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ======================================================== -->
+  <!-- EN-TÊTE FIXE SUPÉRIEURE (Menu Scan Master Header)         -->
+  <!-- ======================================================== -->
+  <header class="fixed top-0 left-0 right-0 lg:left-64 z-40 bg-brand-dark text-white shadow-[0_2px_10px_rgba(43,29,23,0.25)] border-b border-black/10">
+    <div class="pt-safe">
+      <div class="h-16 px-4 sm:px-6 flex items-center justify-between">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="App.navigateTo('accueil')">
+          <div class="bg-white rounded-lg p-1 shadow-sm flex items-center justify-center flex-shrink-0 lg:hidden">
+            <img alt="Menu Scan Logo" class="h-8 w-auto max-w-[110px] object-contain" src="assets/logo.png"/>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-white font-bold text-[17px] leading-tight tracking-tight">Menu Scan</span>
+            <span class="text-[#D7CCC8] text-[10px] font-bold uppercase tracking-wider" id="headerScreenSubtitle">Accueil</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#EFE6DC] text-[11px] font-semibold border border-white/10 mr-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Google Places API Integration
+          </span>
+          <div class="relative flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-white/10 transition-colors" onclick="App.toggleAuthOrProfile()">
+            <div class="w-8 h-8 rounded-full bg-brand-light text-white font-bold flex items-center justify-center text-xs ring-2 ring-brand-light/60 shadow-sm" id="headerAvatarInitial">
+              ?
+            </div>
+            <span class="hidden md:inline-block text-xs font-bold text-white" id="headerUserName">Non connecté</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- CONTENEUR DES PAGES / ONGLETS PRINCIPAUX                 -->
+  <!-- ======================================================== -->
+  <main class="flex flex-col relative w-full pt-16 pb-safe lg:pb-12 bg-brand-cream min-h-screen lg:pl-64">
+
+    <!-- ---------------------------------------------------- -->
+    <!-- ONGLET 1 : ACCUEIL / DASHBOARD DE COUVERTURE ABIDJAN  -->
+    <!-- ---------------------------------------------------- -->
+    <section id="view-accueil" class="tab-view flex flex-col w-full">
+      <!-- Sticky Sub-Header Field Velocity Banner -->
+      <div class="bg-brand-dark px-4 sm:px-6 py-3 shadow-md border-b border-black/10">
+        <div class="max-w-7xl mx-auto w-full">
+          <div class="flex items-center justify-between text-white mb-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[20px] text-brand-light">radar</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-[#D7CCC8]">Campagne Terrain Abidjan</span>
+            </div>
+            <span class="text-[12px] font-bold text-white bg-white/10 px-2.5 py-0.5 rounded-full" id="campaignCounter">0 / 0 Visites</span>
+          </div>
+          <div class="w-full h-2 bg-black/30 rounded-full overflow-hidden flex">
+            <div id="topBarVisites" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%;" title="Visités"></div>
+            <div id="topBarRelances" class="bg-amber-500 h-full transition-all duration-500" style="width: 0%;" title="Relances"></div>
+            <div id="topBarAVisiter" class="bg-gray-400 h-full transition-all duration-500" style="width: 100%;" title="À visiter"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Operational Canvas -->
+      <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        <!-- Title & Live Status -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 class="text-2xl font-extrabold tracking-tight text-brand-text">Prospection Restaurants</h1>
+            <p class="text-xs sm:text-sm text-brand-muted mt-0.5">
+              Établissements répertoriés pour le district d'Abidjan • Suivi commercial temps réel Menu Scan.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-light text-white text-xs font-bold shadow-md hover:bg-brand-light-hover active:scale-[0.98] transition-all" onclick="App.openAddRestaurantModal()" type="button">
+              <span class="material-symbols-outlined text-[16px]">add_location_alt</span>
+              <span>Ajouter</span>
+            </button>
+            <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-dark text-white text-xs font-bold shadow-md hover:bg-brand-dark-hover active:scale-[0.98] transition-all" onclick="App.syncCommunePlaces()" type="button">
+              <span class="material-symbols-outlined text-[16px] text-brand-light">sync</span>
+              <span>Synchroniser Google Places</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Rapid Search Bar -->
+        <div class="relative w-full flex items-center">
+          <div class="absolute left-4 flex items-center pointer-events-none text-brand-muted">
+            <span class="material-symbols-outlined text-[22px]">search</span>
+          </div>
+          <input 
+            class="w-full h-12 pl-12 pr-14 rounded-2xl bg-white text-brand-text text-sm shadow-sm placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-light transition-all border border-brand-border" 
+            id="globalSearchInput" 
+            placeholder="Rechercher un restaurant réel, commune, quartier, adresse..." 
+            type="text"
+          />
+          <button 
+            aria-label="Effacer la recherche" 
+            class="absolute right-2 h-8 w-8 flex items-center justify-center rounded-xl bg-brand-cream text-brand-muted hover:text-brand-text active:scale-95 transition-all" 
+            onclick="document.getElementById('globalSearchInput').value=''; App.state.searchQuery=''; App.filterAccueilCommunes();" 
+            type="button"
+          >
+            <span class="material-symbols-outlined text-[18px]">tune</span>
+          </button>
+        </div>
+
+        <!-- Abidjan Field Overview / KPI Bento Block -->
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-brand-border flex flex-col gap-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-xl bg-brand-cream flex items-center justify-center text-brand-dark shadow-sm border border-brand-border">
+                <span class="material-symbols-outlined text-[26px]">analytics</span>
+              </div>
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-brand-muted">Couverture Globale</span>
+                <div class="text-xl font-extrabold text-brand-text">District d'Abidjan</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-3xl font-extrabold text-brand-dark" id="kpiCoveragePct">0%</span>
+              <span class="text-xs font-semibold block text-brand-muted -mt-1">Taux d'avancement</span>
+            </div>
+          </div>
+
+          <!-- Bento Metrics Grid (Dynamic Calculations Only) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-brand-cream p-4 rounded-xl flex flex-col justify-between border border-brand-border">
+              <span class="text-xs font-bold text-brand-muted">Total Établissements</span>
+              <span class="text-2xl font-extrabold text-brand-text mt-1" id="kpiTotal">0</span>
+              <span class="text-xs text-brand-muted mt-1 flex items-center gap-1 font-medium">
+                <span class="material-symbols-outlined text-[15px] text-brand-light">storefront</span> 7 Communes cibles
+              </span>
+            </div>
+
+            <div class="bg-brand-cream p-4 rounded-xl flex flex-col justify-between border border-brand-border">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                <span class="text-xs font-bold text-brand-muted">Visités (Validés)</span>
+              </div>
+              <span class="text-2xl font-extrabold text-emerald-700 mt-1" id="kpiVisites">0</span>
+              <span class="text-xs text-emerald-800 font-semibold mt-1">Établissements enregistrés</span>
+            </div>
+
+            <div class="bg-brand-cream p-4 rounded-xl flex flex-col justify-between border border-brand-border">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+                <span class="text-xs font-bold text-brand-muted">À Visiter (Prioritaires)</span>
+              </div>
+              <span class="text-2xl font-extrabold text-gray-700 mt-1" id="kpiAVisiter">0</span>
+              <span class="text-xs text-gray-600 font-medium mt-1">Objectifs actifs terrain</span>
+            </div>
+
+            <div class="bg-brand-cream p-4 rounded-xl flex flex-col justify-between border border-brand-border">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-600"></span>
+                <span class="text-xs font-bold text-brand-muted">Relances En Cours</span>
+              </div>
+              <span class="text-2xl font-extrabold text-amber-700 mt-1" id="kpiRelances">0</span>
+              <span class="text-xs text-amber-800 font-medium mt-1">Rendez-vous programmés</span>
+            </div>
+          </div>
+
+          <!-- Progress Track -->
+          <div class="flex flex-col gap-2 pt-2">
+            <div class="flex flex-wrap items-center justify-between text-xs font-bold gap-2">
+              <span class="text-emerald-700 flex items-center gap-1.5" id="bentoLabelVisites">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> 0 visités
+              </span>
+              <span class="text-amber-700 flex items-center gap-1.5" id="bentoLabelRelances">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-600"></span> 0 relances
+              </span>
+              <span class="text-gray-600 font-bold flex items-center gap-1.5" id="bentoLabelAVisiter">
+                <span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span> 0 à visiter
+              </span>
+            </div>
+            <div class="w-full h-3 bg-brand-cream rounded-full overflow-hidden flex p-0.5 border border-brand-border">
+              <div id="bentoBarVisites" class="bg-emerald-500 h-full rounded-l-full transition-all duration-500" style="width: 0%;"></div>
+              <div id="bentoBarRelances" class="bg-amber-500 h-full transition-all duration-500" style="width: 0%;"></div>
+              <div id="bentoBarAVisiter" class="bg-gray-400 h-full rounded-r-full transition-all duration-500" style="width: 100%;"></div>
+            </div>
+          </div>
+
+          <!-- Tactical Quick Actions -->
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button class="flex-1 h-12 rounded-xl bg-brand-dark text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:bg-brand-dark-hover active:scale-[0.99] transition-all" onclick="App.navigateTo('tournee')" type="button">
+              <span class="material-symbols-outlined text-[20px] text-brand-light">near_me</span>
+              <span>Démarrer ma tournée optimisée</span>
+            </button>
+            <button class="h-12 px-6 rounded-xl bg-brand-cream text-brand-dark font-bold text-sm flex items-center justify-center gap-2 hover:bg-brand-border border border-brand-border active:scale-95 transition-all" onclick="App.navigateTo('carte')" type="button">
+              <span class="material-symbols-outlined text-[20px] text-brand-light">map</span>
+              <span>Voir la carte interactive</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- BOSS / ADMIN TEAM PERFORMANCE SECTION -->
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-brand-border flex flex-col gap-4" id="teamPerformanceSection">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-brand-dark text-[22px]">badge</span>
+              <h2 class="text-lg font-bold text-brand-text">Équipe & Performance Commerciale</h2>
+            </div>
+            <span class="text-xs font-bold text-brand-dark bg-brand-cream border border-brand-border px-3 py-1 rounded-full" id="teamCountBadge">0 Membres</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="teamPerformancesGrid">
+            <!-- Dynamiquement généré par App.renderTeamPerformances() -->
+          </div>
+        </section>
+
+        <!-- Zone Selection Section Header -->
+        <div class="flex items-center justify-between pt-2">
+          <div>
+            <h2 class="text-xl text-brand-text font-bold">Communes Cibles</h2>
+            <span class="text-xs text-brand-muted">Classées par nombre réel d'établissements en base</span>
+          </div>
+          <div class="flex items-center gap-1.5 bg-white border border-brand-border px-3 py-1.5 rounded-xl">
+            <span class="material-symbols-outlined text-[18px] text-brand-muted">sort</span>
+            <span class="text-xs font-bold text-brand-text">Priorité Terrain</span>
+          </div>
+        </div>
+
+        <!-- Communes Responsive Grid Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6" id="communesCardsContainer">
+          <!-- Généré dynamiquement par App.renderAccueil() -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- ONGLET 2 : RESTAURANTS (Desktop Split View + Mobile)  -->
+    <!-- ---------------------------------------------------- -->
+    <section id="view-restaurants" class="tab-view hidden flex flex-col w-full">
+      <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div class="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
+          
+          <!-- Left Main Column: List & Filters -->
+          <div class="lg:col-span-7 xl:col-span-7 flex flex-col gap-6">
+            <!-- Zone Info Header Card -->
+            <section class="bg-brand-dark text-white rounded-2xl p-6 shadow-md border border-black/20">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-brand-light text-[26px]">apartment</span>
+                  <h2 class="text-2xl font-bold text-white tracking-tight" id="restCommuneTitle">Cocody</h2>
+                </div>
+                <button class="bg-brand-light hover:bg-brand-light-hover text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm transition-all" onclick="App.syncCommunePlaces()" type="button">
+                  <span class="material-symbols-outlined text-[16px]">sync</span>
+                  <span>Actualiser Google Maps</span>
+                </button>
+              </div>
+              <p class="text-xs text-[#D7CCC8] mb-4">Prospection Commerciale • Établissements Réels Abidjan</p>
+
+              <!-- Carte Jauge & Synthèse Express -->
+              <div class="bg-white text-brand-text rounded-xl p-4 shadow-sm border border-brand-border">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-2xl font-extrabold text-brand-text" id="restTotalTargets">0</span>
+                    <span class="text-xs uppercase text-brand-muted font-bold" id="restTotalLabel">Résultats trouvés</span>
+                  </div>
+                  <div class="flex items-center gap-1 bg-brand-cream border border-brand-border px-3 py-1 rounded-full">
+                    <span class="material-symbols-outlined text-[16px] text-brand-dark">donut_large</span>
+                    <span class="text-xs font-bold text-brand-dark" id="restCoveragePct">0% Couvert</span>
+                  </div>
+                </div>
+                <div class="w-full h-3 bg-brand-cream rounded-full overflow-hidden mb-4 border border-brand-border">
+                  <div id="restCoverageBar" class="h-full bg-brand-dark rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                  <div class="bg-brand-cream p-2 rounded-lg cursor-pointer hover:bg-brand-border transition-colors border border-brand-border" onclick="App.selectStatusFilter('A_VISITER')">
+                    <div class="flex items-center justify-center gap-1 mb-0.5">
+                      <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+                      <span class="text-xs font-bold text-gray-700">À Visiter</span>
+                    </div>
+                    <span class="text-lg font-bold text-gray-800" id="restCountAVisiter">0</span>
+                  </div>
+                  <div class="bg-brand-cream p-2 rounded-lg cursor-pointer hover:bg-brand-border transition-colors border border-brand-border" onclick="App.selectStatusFilter('VISITE')">
+                    <div class="flex items-center justify-center gap-1 mb-0.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                      <span class="text-xs font-bold text-emerald-700">Visités</span>
+                    </div>
+                    <span class="text-lg font-bold text-emerald-800" id="restCountVisites">0</span>
+                  </div>
+                  <div class="bg-brand-cream p-2 rounded-lg cursor-pointer hover:bg-brand-border transition-colors border border-brand-border" onclick="App.selectStatusFilter('A_RELANCER')">
+                    <div class="flex items-center justify-center gap-1 mb-0.5">
+                      <span class="w-2 h-2 rounded-full bg-amber-600"></span>
+                      <span class="text-xs font-bold text-amber-700">Relance</span>
+                    </div>
+                    <span class="text-lg font-bold text-amber-800" id="restCountRelance">0</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Sélecteur Rapide de Commune & Switcher -->
+            <div class="bg-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm border border-brand-border">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[20px] text-brand-light">explore</span>
+                <span class="text-xs font-bold uppercase text-brand-muted">Commune :</span>
+                <select 
+                  class="bg-brand-cream text-brand-text px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-light cursor-pointer"
+                  id="communeQuickSelect"
+                  onchange="App.selectCommune(this.value)"
+                >
+                  <option value="Cocody">Cocody</option>
+                  <option value="Marcory">Marcory</option>
+                  <option value="Plateau">Le Plateau</option>
+                  <option value="Yopougon">Yopougon</option>
+                  <option value="Treichville">Treichville</option>
+                  <option value="Koumassi">Koumassi</option>
+                  <option value="Port-Bouët">Port-Bouët</option>
+                </select>
+              </div>
+              <button class="h-9 px-3 flex items-center gap-1.5 bg-brand-cream hover:bg-brand-border text-brand-dark text-xs font-bold rounded-xl border border-brand-border transition-colors" onclick="App.navigateTo('carte')" type="button">
+                <span>Carte complète</span>
+                <span class="material-symbols-outlined text-[16px] text-brand-light">map</span>
+              </button>
+            </div>
+
+            <!-- Filtres Défilants Quartiers -->
+            <div class="w-full overflow-x-auto py-1 flex items-center gap-2 no-scrollbar" id="quartierPillsContainer">
+              <!-- Rendu dynamique par App.renderQuartierPills() -->
+            </div>
+
+            <!-- Barre Défilante de Statuts -->
+            <div class="w-full overflow-x-auto py-1 flex items-center gap-2 no-scrollbar" id="statusPillsContainer">
+              <!-- Rendu dynamique par App.renderStatusPills() -->
+            </div>
+
+            <!-- Flux des Cartes de Restaurants -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4" id="restaurantsCardsContainer">
+              <!-- Rendu dynamique par App.renderRestaurantsList() -->
+            </div>
+          </div>
+
+          <!-- Right Column: Desktop Sticky Interactive Map View -->
+          <div class="hidden lg:block lg:col-span-5 xl:col-span-5 lg:sticky lg:top-20">
+            <div class="bg-white rounded-2xl shadow-lg border border-brand-border overflow-hidden flex flex-col h-[calc(100vh-7.5rem)]">
+              <div class="p-4 bg-brand-dark text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-brand-light text-[22px]">map</span>
+                  <span class="font-bold text-sm">Vue Carte Sectorielle</span>
+                </div>
+                <button class="text-xs font-bold text-[#D7CCC8] hover:text-white flex items-center gap-1" onclick="App.navigateTo('carte')">
+                  Plein écran <span class="material-symbols-outlined text-[16px]">open_in_full</span>
+                </button>
+              </div>
+              <div class="relative w-full flex-1 bg-brand-cream" id="desktopRestaurantsMap"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- ONGLET 3 : CARTE INTERACTIVE (Cocody & Abidjan)       -->
+    <!-- ---------------------------------------------------- -->
+    <section id="view-carte" class="tab-view hidden flex flex-col w-full relative">
+      <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col gap-3">
+        
+        <!-- Top Controls Bar -->
+        <div class="bg-white rounded-2xl shadow-sm border border-brand-border overflow-hidden">
+          <!-- Header Row -->
+          <div class="flex items-center justify-between gap-3 p-3">
+            <div class="flex items-center gap-2 px-1">
+              <span class="material-symbols-outlined text-[20px] text-brand-light">explore</span>
+              <span class="text-sm font-bold text-brand-text">Carte Interactive — Abidjan</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <!-- Counters -->
+              <span class="flex items-center gap-1 text-[11px] font-bold bg-brand-cream border border-brand-border px-2.5 py-1 rounded-full text-brand-text">
+                <span class="w-2 h-2 rounded-full bg-brand-dark"></span>
+                <span id="mapCounterVisible">0</span> affichés
+              </span>
+              <span class="flex items-center gap-1 text-[11px] font-bold bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full text-amber-700">
+                <span class="material-symbols-outlined text-[13px]">location_off</span>
+                <span id="mapCounterUnlocalized">0</span> non localisés
+              </span>
+              <!-- Filter toggle -->
+              <button id="mapFilterToggleBtn" type="button" onclick="App.state.mapFiltersOpen=!App.state.mapFiltersOpen; document.getElementById('mapFiltersPanel').classList.toggle('hidden'); this.querySelector('.material-symbols-outlined').textContent = App.state.mapFiltersOpen ? 'expand_less' : 'tune'" class="flex items-center gap-1 h-8 px-3 bg-brand-dark text-white rounded-xl text-xs font-bold hover:bg-brand-dark-hover transition-colors">
+                <span class="material-symbols-outlined text-[17px]">tune</span>
+                <span class="hidden sm:inline">Filtres</span>
+              </button>
+              <!-- Recenter -->
+              <button aria-label="Recentrer la carte" class="w-8 h-8 flex items-center justify-center bg-brand-cream text-brand-dark rounded-xl shadow-sm hover:bg-brand-border border border-brand-border transition-transform flex-shrink-0" id="recenterBtn" type="button">
+                <span class="material-symbols-outlined text-[18px]">my_location</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Filters Panel -->
+          <div id="mapFiltersPanel" class="hidden border-t border-brand-border bg-brand-cream p-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] font-bold text-brand-muted uppercase tracking-wide">Commune</label>
+              <select id="mapFilterCommuneSelect" onchange="App.state.mapFilterCommune=this.value; App.updateMapQuartierOptions(); App.updateMapMarkers()" class="h-9 px-2 rounded-xl border border-brand-border bg-white text-xs font-medium text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-light">
+                <option value="all">Toutes</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] font-bold text-brand-muted uppercase tracking-wide">Quartier</label>
+              <select id="mapFilterQuartierSelect" onchange="App.state.mapFilterQuartier=this.value; App.updateMapMarkers()" class="h-9 px-2 rounded-xl border border-brand-border bg-white text-xs font-medium text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-light">
+                <option value="all">Tous</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] font-bold text-brand-muted uppercase tracking-wide">Statut</label>
+              <select id="mapFilterStatusSelect" onchange="App.state.mapFilterStatus=this.value; App.updateMapMarkers()" class="h-9 px-2 rounded-xl border border-brand-border bg-white text-xs font-medium text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-light">
+                <option value="all">Tous les statuts</option>
+                <option value="A_VISITER">⬤ À visiter</option>
+                <option value="VISITE">⬤ Visité</option>
+                <option value="A_RELANCER">⬤ À rappeler</option>
+                <option value="REFUS">⬤ Refus</option>
+                <option value="INTERESSE">⬤ Intéressé</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] font-bold text-brand-muted uppercase tracking-wide">Agent</label>
+              <select id="mapFilterAgentSelect" onchange="App.state.mapFilterAgent=this.value; App.updateMapMarkers()" class="h-9 px-2 rounded-xl border border-brand-border bg-white text-xs font-medium text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-light">
+                <option value="all">Tous les agents</option>
+              </select>
+            </div>
+            <!-- Legend row -->
+            <div class="col-span-2 sm:col-span-4 flex flex-wrap items-center gap-2 pt-1 border-t border-brand-border mt-1">
+              <span class="text-[10px] font-bold text-brand-muted">Légende :</span>
+              <span class="flex items-center gap-1 text-[10px] font-semibold"><span class="w-3 h-3 rounded-full bg-[#6B7280]"></span>À visiter</span>
+              <span class="flex items-center gap-1 text-[10px] font-semibold"><span class="w-3 h-3 rounded-full bg-[#16A34A]"></span>Visité</span>
+              <span class="flex items-center gap-1 text-[10px] font-semibold"><span class="w-3 h-3 rounded-full bg-[#EA580C]"></span>À rappeler</span>
+              <span class="flex items-center gap-1 text-[10px] font-semibold"><span class="w-3 h-3 rounded-full bg-[#DC2626]"></span>Refus</span>
+              <span class="flex items-center gap-1 text-[10px] font-semibold"><span class="w-3 h-3 rounded-full bg-[#A1783F]"></span>Intéressé</span>
+              <!-- Batch geocode button -->
+              <button type="button" onclick="App.openBatchGeocodeModal()" class="ml-auto flex items-center gap-1.5 h-7 px-3 bg-brand-light text-white rounded-lg text-[10px] font-bold hover:bg-brand-light-hover transition-colors">
+                <span class="material-symbols-outlined text-[13px]">location_searching</span>
+                Localiser les non localisés
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map Viewport -->
+        <div class="relative w-full h-[520px] lg:h-[calc(100vh-12rem)] min-h-[450px] bg-brand-cream rounded-2xl overflow-hidden shadow-md border border-brand-border z-10" id="mapContainer"></div>
+
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- ONGLET 4 : TOURNÉE DE PROSPECTION                     -->
+    <!-- ---------------------------------------------------- -->
+    <section id="view-tournee" class="tab-view hidden flex flex-col w-full">
+      <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        <div class="bg-brand-dark text-white rounded-2xl p-6 shadow-md flex items-center justify-between border border-black/20 gap-4">
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-light">Circuit Optimisé Proximité</span>
+            <h2 class="text-2xl font-bold text-white mt-0.5 truncate" id="tourneeCommuneTitle">Tournée Terrain Cocody</h2>
+            <span class="text-xs text-[#D7CCC8] mt-1"><span id="tourneeTotalCount">0</span> établissements regroupés par proximité GPS</span>
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <div class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/20">
+              <span class="material-symbols-outlined text-[18px] text-brand-light">explore</span>
+              <select 
+                class="bg-transparent text-white text-xs font-bold cursor-pointer focus:outline-none"
+                id="tourneeCommuneSelect"
+                onchange="App.selectCommune(this.value)"
+              >
+                <option value="Cocody" class="text-brand-dark">Cocody</option>
+                <option value="Marcory" class="text-brand-dark">Marcory</option>
+                <option value="Plateau" class="text-brand-dark">Le Plateau</option>
+                <option value="Yopougon" class="text-brand-dark">Yopougon</option>
+                <option value="Treichville" class="text-brand-dark">Treichville</option>
+                <option value="Koumassi" class="text-brand-dark">Koumassi</option>
+                <option value="Port-Bouët" class="text-brand-dark">Port-Bouët</option>
+              </select>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-brand-light flex items-center justify-center text-white shadow-md flex-shrink-0">
+              <span class="material-symbols-outlined text-[26px]">route</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-brand-text">Étapes de Prospection</h3>
+          <span class="text-xs text-brand-dark font-bold flex items-center gap-1 bg-white border border-brand-border px-3 py-1 rounded-full">
+            <span class="material-symbols-outlined text-[16px] text-brand-light">auto_awesome</span> Ordre Optimisé GPS
+          </span>
+        </div>
+
+        <!-- Responsive Grid for Tournee Steps -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="tourneeListContainer">
+          <!-- Rendu dynamique par App.renderTournee() -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- ONGLET 5 : HISTORIQUE DES VISITES                    -->
+    <!-- ---------------------------------------------------- -->
+    <section id="view-historique" class="tab-view hidden flex flex-col w-full">
+      <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-bold text-brand-text">Historique Terrain</h2>
+            <span class="text-xs text-brand-muted">Traçabilité complète des contacts, comptes-rendus et relances</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="App.exportVisitsPDF()" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-700 text-white text-xs font-bold shadow-sm hover:bg-rose-800 transition-colors">
+              <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+              <span>Export PDF Visites</span>
+            </button>
+            <button onclick="App.exportRestaurantsPDF()" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-dark text-white text-xs font-bold shadow-sm hover:bg-brand-dark-hover transition-colors">
+              <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+              <span>Export PDF Restaurants</span>
+            </button>
+            <button onclick="App.exportVisitsCSV()" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-white border border-brand-border text-brand-text text-xs font-bold shadow-sm hover:bg-brand-cream transition-colors" title="Export au format CSV">
+              <span class="material-symbols-outlined text-[16px]">table_chart</span>
+              <span>CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Responsive Grid for History Items -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" id="historyListContainer">
+          <!-- Rendu dynamique par App.renderHistorique() -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- VUE : ADMINISTRATION DE L'ÉQUIPE (ADMIN ONLY)            -->
+    <!-- ======================================================== -->
+    <section id="view-admin" class="tab-view hidden flex flex-col w-full">
+      <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        
+        <!-- En-tête de la vue Admin -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-brand-dark p-6 rounded-2xl text-white shadow-md border border-white/10">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-brand-light flex items-center justify-center text-white shadow-sm">
+              <span class="material-symbols-outlined text-[28px]">admin_panel_settings</span>
+            </div>
+            <div>
+              <h2 class="text-xl font-extrabold text-white">Espace Administration & Gestion de l'Équipe</h2>
+              <p class="text-xs text-[#D7CCC8]">Panneau de contrôle privé réservé aux Administrateurs</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="admin.php" target="_blank" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+              <span>Ouvrir en plein écran</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- CARTE DE SUCCÈS : MOT DE PASSE GÉNÉRÉ -->
+        <div id="mainAdminCredentialsAlert" class="hidden bg-emerald-950 text-white rounded-2xl p-6 shadow-xl border border-emerald-500/40 relative">
+          <button onclick="document.getElementById('mainAdminCredentialsAlert').classList.add('hidden')" type="button" class="absolute top-4 right-4 text-emerald-300 hover:text-white">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-500/30">
+              <span class="material-symbols-outlined text-[28px]">key</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-base font-extrabold text-emerald-300">Nouveaux identifiants générés !</h3>
+              <p class="text-xs text-emerald-100/80 mt-1">Copiez ces identifiants pour les envoyer à l'agent terrain :</p>
+              
+              <div class="mt-4 bg-black/40 border border-emerald-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono text-sm">
+                <div>
+                  <div><span class="text-emerald-400 text-xs font-sans">Email :</span> <strong id="mainCredEmail" class="text-white"></strong></div>
+                  <div class="mt-1"><span class="text-emerald-400 text-xs font-sans">Mot de passe :</span> <strong id="mainCredPass" class="text-amber-300 font-extrabold text-base"></strong></div>
+                </div>
+                <button onclick="App.copyMainAdminCredentials()" type="button" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold font-sans flex items-center gap-1.5 transition-colors shadow-sm">
+                  <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  <span>Copier les accès</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORMULAIRE DE CRÉATION D'UN MEMBRE -->
+        <div class="bg-white rounded-2xl shadow-sm border border-brand-border p-6 flex flex-col gap-6">
+          <div class="flex items-center gap-3 pb-4 border-b border-brand-border">
+            <div class="w-10 h-10 rounded-xl bg-brand-light/15 text-brand-light flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[24px]">group_add</span>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-brand-text">Ajouter un agent ou un administrateur</h3>
+              <p class="text-xs text-brand-muted">Entrez le nom et l'email. Un mot de passe sécurisé sera généré automatiquement.</p>
+            </div>
+          </div>
+
+          <form onsubmit="App.handleMainCreateUserSubmit(event)" class="flex flex-col gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-brand-muted mb-1" for="mainNewUserName">Nom & Prénom *</label>
+                <input type="text" id="mainNewUserName" required placeholder="Ex: Koffi Jean" class="w-full h-11 px-3.5 rounded-xl bg-brand-cream border border-brand-border text-xs text-brand-text font-medium focus:outline-none focus:ring-2 focus:ring-brand-light"/>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-brand-muted mb-1" for="mainNewUserEmail">Adresse Email *</label>
+                <input type="email" id="mainNewUserEmail" required placeholder="agent1@menuscan.ci" class="w-full h-11 px-3.5 rounded-xl bg-brand-cream border border-brand-border text-xs text-brand-text font-medium focus:outline-none focus:ring-2 focus:ring-brand-light"/>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-brand-muted mb-1" for="mainNewUserRole">Rôle système</label>
+                <select id="mainNewUserRole" class="w-full h-11 px-3.5 rounded-xl bg-brand-cream border border-brand-border text-xs text-brand-text font-semibold focus:outline-none focus:ring-2 focus:ring-brand-light">
+                  <option value="AGENT">Agent terrain (Prospecteur)</option>
+                  <option value="ADMIN">Administrateur (Accès complet)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-brand-muted mb-1" for="mainNewUserCustomPass">Mot de passe (Optionnel)</label>
+                <input type="text" id="mainNewUserCustomPass" placeholder="Laisser vide pour générer auto" class="w-full h-11 px-3.5 rounded-xl bg-brand-cream border border-brand-border text-xs text-brand-text font-mono focus:outline-none focus:ring-2 focus:ring-brand-light"/>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-brand-muted mb-2">Communes attribuées à cet agent :</label>
+              <div class="flex flex-wrap gap-2" id="mainCommunesCheckboxes">
+                <!-- Dynamique via JS -->
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button type="submit" class="h-11 px-6 bg-brand-dark hover:bg-brand-dark-hover text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-brand-light">add_circle</span>
+                <span>CRÉER LE MEMBRE & GÉNÉRER LES ACCÈS</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- LISTE DES MEMBRES DE L'ÉQUIPE -->
+        <div class="bg-white rounded-2xl shadow-sm border border-brand-border p-6 flex flex-col gap-6">
+          <div class="flex items-center justify-between pb-4 border-b border-brand-border">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-brand-light/15 text-brand-light flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[24px]">badge</span>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-brand-text">Équipe & Utilisateurs Inscrits (<span id="mainAdminUsersCount">0</span>)</h3>
+                <p class="text-xs text-brand-muted">Cliquez sur une commune pour l'attribuer ou la retirer à un agent</p>
+              </div>
+            </div>
+            <button onclick="App.renderAdminUsersList()" type="button" class="p-2 text-brand-muted hover:text-brand-text rounded-lg hover:bg-brand-surface transition-colors" title="Actualiser">
+              <span class="material-symbols-outlined text-[20px]">refresh</span>
+            </button>
+          </div>
+
+          <div id="mainAdminUsersListContainer" class="flex flex-col gap-4">
+            <!-- Rendu dynamique par App.renderAdminUsersList() -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- MODALE : AUTHENTIFICATION & CRÉATION DE COMPTE          -->
+  <!-- ======================================================== -->
+  <div id="authModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-brand-border flex flex-col">
+      <!-- Auth Header avec Logo Officiel Menu Scan -->
+      <div class="bg-brand-dark p-6 text-white flex flex-col items-center text-center relative border-b border-white/10">
+        <button class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 text-white hover:bg-white/25 flex items-center justify-center transition-colors" onclick="App.closeAuthModal()" type="button">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+        <div class="bg-white p-2 rounded-2xl shadow-md mb-2.5 flex items-center justify-center">
+          <img alt="Menu Scan Logo" class="h-10 w-auto max-w-[160px] object-contain" src="assets/logo.png"/>
+        </div>
+        <h2 class="text-xl font-extrabold tracking-tight text-white">Menu Scan — Prospection Abidjan</h2>
+        <p class="text-xs text-[#D7CCC8] mt-1 max-w-xs">Accédez à votre compte pour synchroniser vos visites terrain</p>
+      </div>
+
+      <!-- Form Login -->
+      <form class="p-6 flex flex-col gap-4" id="formAuthLogin" onsubmit="App.handleLoginSubmit(event)">
+        <div>
+          <label class="block text-xs font-bold text-brand-muted mb-1" for="loginEmail">Adresse email</label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[20px]">mail</span>
+            <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs font-medium border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-light focus:bg-white" id="loginEmail" placeholder="agent@menuscan.ci" required type="email"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-brand-muted mb-1" for="loginPassword">Mot de passe</label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[20px]">lock</span>
+            <input class="w-full h-11 pl-10 pr-10 rounded-xl bg-brand-cream text-brand-text text-xs font-medium border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-light focus:bg-white" id="loginPassword" placeholder="••••••••" required type="password"/>
+            <button type="button" class="absolute right-2.5 h-8 w-8 flex items-center justify-center text-brand-muted hover:text-brand-dark transition-colors focus:outline-none" onclick="App.togglePasswordVisibility('loginPassword', this)" title="Afficher ou masquer le mot de passe" aria-label="Afficher ou masquer le mot de passe">
+              <span class="material-symbols-outlined text-[20px]">visibility</span>
+            </button>
+          </div>
+        </div>
+        <button class="w-full h-12 rounded-xl bg-brand-dark text-white text-sm font-bold shadow-md hover:bg-brand-dark-hover transition-all flex items-center justify-center gap-2 mt-2 active:scale-[0.99]" type="submit">
+          <span>SE CONNECTER</span>
+          <span class="material-symbols-outlined text-[20px] text-brand-light">login</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODALE : GÉOCODAGE BATCH (Localisation en masse)        -->
+  <!-- ======================================================== -->
+  <div id="batchGeocodeModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-brand-border flex flex-col">
+      <div class="bg-brand-dark p-5 text-white flex items-center justify-between border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[28px] text-brand-light">location_searching</span>
+          <div>
+            <h2 class="font-extrabold text-base">Géocodage en masse</h2>
+            <p class="text-[11px] text-[#D7CCC8]">Nominatim / OpenStreetMap — 100% gratuit</p>
+          </div>
+        </div>
+        <button onclick="App.closeBatchGeocodeModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center" type="button">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+      <div class="p-5 flex flex-col gap-4">
+        <div class="bg-brand-cream rounded-xl p-3 border border-brand-border flex items-center gap-3">
+          <span class="material-symbols-outlined text-[24px] text-amber-600">info</span>
+          <div>
+            <p class="text-xs font-bold text-brand-text"><span id="batchGeocodeCount">0</span> restaurants non localisés à traiter</p>
+            <p class="text-[11px] text-brand-muted">Limite OSM : 1 requête/seconde. Soyez patient.</p>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-brand-text">Progression</span>
+            <span class="text-brand-muted" id="batchGeocodeText">Prêt à démarrer</span>
+          </div>
+          <div class="w-full bg-brand-cream rounded-full h-3 border border-brand-border overflow-hidden">
+            <div id="batchGeocodeBar" class="h-3 bg-brand-dark rounded-full transition-all duration-500" style="width:0%"></div>
+          </div>
+          <p class="text-xs font-bold text-center" id="batchGeocodeResult"></p>
+        </div>
+        <div class="flex gap-3">
+          <button type="button" onclick="App.closeBatchGeocodeModal()" class="flex-1 h-11 rounded-xl bg-brand-cream text-brand-text border border-brand-border text-sm font-bold hover:bg-brand-border transition-colors">
+            Fermer
+          </button>
+          <button id="batchGeocodeStartBtn" type="button" onclick="App.runBatchGeocode()" class="flex-[2] h-11 rounded-xl bg-brand-dark text-white text-sm font-bold hover:bg-brand-dark-hover shadow-md transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-brand-light">play_arrow</span>
+            Démarrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-brand-border flex flex-col">
+      <div class="bg-brand-dark p-6 text-white flex flex-col items-center text-center relative border-b border-white/10">
+        <button class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 text-white hover:bg-white/25 flex items-center justify-center transition-colors" onclick="App.closeConfigModal()" type="button">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+        <span class="material-symbols-outlined text-[36px] text-brand-light mb-1">key</span>
+        <h2 class="text-xl font-extrabold tracking-tight text-white">Configuration Google Maps Platform</h2>
+        <p class="text-xs text-[#D7CCC8] mt-1">Saisissez votre clé API Google Places pour activer la synchronisation en temps réel des établissements d'Abidjan</p>
+      </div>
+
+      <form class="p-6 flex flex-col gap-4" onsubmit="App.handleSaveConfigSubmit(event)">
+        <div>
+          <label class="block text-xs font-bold text-brand-muted mb-1" for="cfgApiKey">Google Places API Key</label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[20px]">vpn_key</span>
+            <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs font-mono border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-light focus:bg-white" id="cfgApiKey" placeholder="AIzaSy..." type="text"/>
+          </div>
+          <span class="text-[11px] text-brand-muted mt-1 block">Clé stockée de façon sécurisée côté serveur pour exécuter les requêtes Places API.</span>
+        </div>
+
+        <button class="w-full h-12 rounded-xl bg-brand-dark text-white text-sm font-bold shadow-md hover:bg-brand-dark-hover transition-all flex items-center justify-center gap-2 mt-2 active:scale-[0.99]" type="submit">
+          <span>ENREGISTRER LA CLÉ API</span>
+          <span class="material-symbols-outlined text-[20px] text-brand-light">save</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODALE : FICHE RESTAURANT & VISITE EN COURS               -->
+  <!-- ======================================================== -->
+  <div id="visitDetailModal" class="fullscreen-modal hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-0 lg:p-6 overflow-y-auto">
+    <div class="w-full h-full lg:h-auto lg:max-h-[90vh] lg:max-w-3xl bg-brand-cream lg:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-brand-border">
+      
+      <!-- Header Visite en Cours -->
+      <header class="sticky top-0 z-40 bg-brand-dark text-white shadow-md border-b border-black/10">
+        <div class="pt-safe">
+          <div class="h-16 px-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button class="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center text-white hover:bg-white/25 transition-colors" onclick="App.closeModalViews()" type="button">
+                <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+              </button>
+              <div class="flex flex-col">
+                <span class="text-white font-bold text-base leading-tight">Prospection Abidjan</span>
+                <span class="text-[#D7CCC8] text-[11px] font-bold">Fiche & Session Terrain</span>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <div class="w-8 h-8 rounded-full bg-brand-light text-white font-bold flex items-center justify-center text-xs shadow-sm ring-2 ring-brand-light/60" id="visitModalAvatar">
+                ?
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chronomètre -->
+        <div class="w-full bg-black/25 text-white border-t border-white/10 px-4 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-3 w-3 items-center justify-center">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Visite terrain en cours</span>
+          </div>
+          <div class="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-1.5 border border-white/10">
+            <span class="text-xs font-semibold text-[#D7CCC8]" id="visitStartTime">Début: --:--</span>
+            <div class="flex items-center gap-1 text-base font-extrabold text-white" id="visitTimer">
+              <span>00</span><span class="text-brand-light">:</span><span>00</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Corps de la Fiche Restaurant -->
+      <div class="p-4 sm:p-6 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-14rem)] lg:max-h-[calc(90vh-12rem)] pb-24 lg:pb-6">
+        <!-- Venue Hero Photo & Badging Card -->
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col border border-brand-border">
+          <div class="relative w-full h-52 bg-brand-cream">
+            <img class="w-full h-full object-cover" id="modalVenuePhoto" src="assets/restaurant_placeholder.svg" alt="Photo restaurant" onerror="this.src='assets/restaurant_placeholder.svg'"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/95 via-brand-dark/40 to-transparent"></div>
+            <div class="absolute top-4 right-4">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-bold shadow-md border border-gray-200" id="modalStatusBadge">
+                <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+                À VISITER
+              </span>
+            </div>
+            <div class="absolute bottom-4 left-4 right-4 text-white">
+              <div class="flex items-center gap-1.5 text-brand-light text-xs font-bold mb-1">
+                <span class="material-symbols-outlined text-[16px]">restaurant</span>
+                <span id="modalVenueCuisine">Non renseigné</span>
+              </div>
+              <h1 class="text-2xl font-bold leading-tight text-white drop-shadow-sm truncate" id="modalVenueName">Restaurant</h1>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 p-4 bg-brand-cream text-brand-text border-t border-brand-border">
+            <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-brand-border">
+              <div class="w-9 h-9 rounded-xl bg-brand-cream flex items-center justify-center text-brand-dark border border-brand-border">
+                <span class="material-symbols-outlined text-[20px]">schedule</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-[11px] font-bold text-brand-muted">Horaires</span>
+                <span class="text-xs font-bold truncate text-brand-text" id="modalVenueHours">Non renseigné</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-brand-border">
+              <div class="w-9 h-9 rounded-xl bg-brand-cream flex items-center justify-center text-emerald-700 border border-brand-border">
+                <span class="material-symbols-outlined text-[20px]">near_me</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-[11px] font-bold text-brand-muted">Distance GPS</span>
+                <span class="text-xs font-bold truncate text-brand-dark" id="modalVenueDistance">Calcul en cours...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Geo & Contact Tactical Card -->
+        <div class="bg-white rounded-2xl shadow-sm p-4 sm:p-5 flex flex-col gap-3 border border-brand-border">
+          <div class="flex items-center justify-between pb-1">
+            <div class="flex items-center gap-2 text-brand-text">
+              <span class="material-symbols-outlined text-brand-light text-[22px]">pin_drop</span>
+              <span class="text-sm font-bold">Localisation & Coordonnées Réelles</span>
+            </div>
+            <span class="bg-brand-cream text-brand-dark border border-brand-border text-[11px] font-bold px-2.5 py-0.5 rounded-full" id="modalSourceBadge">Google Maps</span>
+          </div>
+          <div class="flex flex-col bg-brand-cream p-3 rounded-xl gap-0.5 border border-brand-border">
+            <p class="text-xs text-brand-text leading-relaxed font-medium" id="modalVenueAddress">
+              Adresse non renseignée
+            </p>
+          </div>
+          <a class="flex items-center justify-between w-full h-12 px-4 bg-brand-cream hover:bg-brand-border rounded-xl text-brand-text border border-brand-border transition-all" href="tel:" id="modalCallLink">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-brand-light text-white flex items-center justify-center shadow-sm">
+                <span class="material-symbols-outlined text-[20px]">call</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[11px] text-brand-muted font-bold">Téléphone établissement</span>
+                <span class="text-xs font-bold text-brand-dark tracking-tight" id="modalVenuePhone">Non renseigné</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined text-brand-light text-[20px]">arrow_forward</span>
+          </a>
+
+          <!-- Mini-Map Section -->
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-brand-text flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px] text-brand-light">map</span>
+                Position sur la carte
+              </span>
+              <span class="text-[10px] text-brand-muted font-medium" id="modalMiniMapCoords"></span>
+            </div>
+            <!-- Map container with overlay -->
+            <div class="relative w-full rounded-xl overflow-hidden border border-brand-border" style="height:220px">
+              <div id="modalMiniMap" class="w-full h-full bg-brand-cream"></div>
+              <!-- No-coords overlay -->
+              <div id="modalNoCoordsOverlay" class="hidden absolute inset-0 bg-brand-cream/95 flex flex-col items-center justify-center gap-3 z-10">
+                <span class="material-symbols-outlined text-[40px] text-brand-muted">location_off</span>
+                <span class="text-xs font-bold text-brand-text text-center">Position non renseignée</span>
+                <button type="button" id="modalGeocodeBtn" onclick="App.geocodeRestaurant(App.state.activeRestaurant?.id).then(r => { if(r) { App.loadData(true).then(() => App.initModalMiniMap(App.state.activeRestaurant)); } })" class="flex items-center gap-1.5 h-9 px-4 bg-brand-dark text-white rounded-xl text-xs font-bold hover:bg-brand-dark-hover transition-colors">
+                  <span class="material-symbols-outlined text-[15px]">location_searching</span>
+                  Localiser via Nominatim
+                </button>
+              </div>
+            </div>
+            <p class="text-[10px] text-brand-muted italic">Glisser le marqueur pour corriger la position manuellement.</p>
+          </div>
+        </div>
+
+        <!-- Quick Field Note Textarea -->
+        <div class="bg-white rounded-2xl shadow-sm p-4 sm:p-5 flex flex-col gap-2 border border-brand-border">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-bold text-brand-text flex items-center gap-2" for="fieldLiveNotes">
+              <span class="material-symbols-outlined text-brand-light text-[20px]">edit_note</span>
+              Notes rapides en direct
+            </label>
+            <span class="text-[11px] text-brand-muted font-medium">Auto-mémorisé</span>
+          </div>
+          <textarea 
+            class="w-full bg-brand-cream text-brand-text placeholder:text-brand-muted text-sm rounded-xl p-3 outline-none resize-none focus:bg-white focus:ring-2 focus:ring-brand-light shadow-inner border border-brand-border" 
+            id="fieldLiveNotes" 
+            placeholder="Ex: Le responsable souhaite recevoir une démonstration..." 
+            rows="2"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Bottom Action Dock -->
+      <div class="p-4 bg-white border-t border-brand-border flex items-center gap-3">
+        <a class="flex-1 h-12 bg-brand-cream hover:bg-brand-border text-brand-dark border border-brand-border rounded-xl flex items-center justify-center gap-2 text-xs font-bold shadow-sm transition-all" href="#" id="modalRouteBtn" target="_blank">
+          <span class="material-symbols-outlined text-brand-light text-[20px]">navigation</span>
+          <span>Ouvrir Google Maps</span>
+        </a>
+        <button class="flex-[2] h-12 bg-brand-dark text-white hover:bg-brand-dark-hover rounded-xl flex items-center justify-center gap-2 text-sm font-bold shadow-md tracking-tight uppercase active:scale-[0.99] transition-all" onclick="App.finishVisitAndOpenReport()" type="button">
+          <span class="material-symbols-outlined text-[20px] text-brand-light">check_circle</span>
+          <span>TERMINER & RAPPORT</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODALE : RAPPORT POST-VISITE                             -->
+  <!-- ======================================================== -->
+  <div id="postVisitReportModal" class="fullscreen-modal hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-0 lg:p-6 overflow-y-auto">
+    <div class="w-full h-full lg:h-auto lg:max-h-[90vh] lg:max-w-3xl bg-brand-cream lg:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-brand-border">
+      
+      <!-- Header Rapport -->
+      <header class="sticky top-0 z-40 bg-brand-dark text-white shadow-md border-b border-black/10">
+        <div class="pt-safe">
+          <div class="h-16 px-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button class="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center text-white hover:bg-white/25 transition-colors" onclick="App.closeModalViews()" type="button">
+                <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+              </button>
+              <div class="flex flex-col">
+                <span class="text-white font-bold text-base leading-tight">Prospection Abidjan</span>
+                <span class="text-[#D7CCC8] text-[11px] font-bold">Rapport Visite CRM</span>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <div class="w-8 h-8 rounded-full bg-brand-light text-white font-bold flex items-center justify-center text-xs shadow-sm ring-2 ring-brand-light/60" id="reportModalAvatar">
+                ?
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Corps du Rapport -->
+      <div class="p-4 sm:p-6 space-y-5 overflow-y-auto max-h-[calc(100vh-12rem)] lg:max-h-[calc(90vh-10rem)] pb-24 lg:pb-6">
+        <!-- Restaurant Dossier Header Card -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-brand-border">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full bg-brand-cream border border-brand-border text-brand-dark text-[10px] font-bold">ÉTABLISSEMENT RÉEL</span>
+                <span class="text-brand-muted text-[11px] font-semibold" id="reportRestaurantId">ID #</span>
+              </div>
+              <h1 class="text-lg font-bold text-brand-text truncate" id="reportRestaurantName">Restaurant</h1>
+              <p class="text-xs text-brand-muted flex items-center gap-1 mt-0.5">
+                <span class="material-symbols-outlined text-[15px] text-brand-light">location_on</span>
+                <span id="reportRestaurantAddress">Abidjan</span>
+              </p>
+            </div>
+            <div class="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-brand-cream shadow-inner border border-brand-border">
+              <img class="w-full h-full object-cover" id="reportPhoto" src="assets/restaurant_placeholder.svg" alt="Restaurant" onerror="this.src='assets/restaurant_placeholder.svg'"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 1 : Résultat de la Visite -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 border border-brand-border">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-bold text-brand-text flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-light"></span>
+              1. Résultat de la visite
+            </label>
+            <span class="text-xs text-brand-light font-bold">1 tap requis</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="visitStatusGroup">
+            <button class="status-option w-full min-h-[48px] py-2.5 px-4 rounded-xl flex items-center justify-between text-left transition-all bg-brand-light text-white shadow-sm" data-status="tres_interesse" onclick="App.selectReportStatus('tres_interesse')" type="button">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-white/50 flex-shrink-0"></span>
+                <span class="text-xs font-bold truncate">Contact établi - Très intéressé</span>
+              </div>
+              <span class="material-symbols-outlined text-[20px] checkmark-icon">check_circle</span>
+            </button>
+            <button class="status-option w-full min-h-[48px] py-2.5 px-4 rounded-xl flex items-center justify-between text-left transition-all bg-brand-cream text-brand-text border border-brand-border hover:bg-brand-border" data-status="interesse" onclick="App.selectReportStatus('interesse')" type="button">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-3 h-3 rounded-full bg-emerald-600 flex-shrink-0"></span>
+                <span class="text-xs font-medium truncate">Contact établi - Intéressé</span>
+              </div>
+              <span class="material-symbols-outlined text-[20px] checkmark-icon opacity-0">check_circle</span>
+            </button>
+            <button class="status-option w-full min-h-[48px] py-2.5 px-4 rounded-xl flex items-center justify-between text-left transition-all bg-brand-cream text-brand-text border border-brand-border hover:bg-brand-border" data-status="relancer" onclick="App.selectReportStatus('relancer')" type="button">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-3 h-3 rounded-full bg-amber-500 flex-shrink-0"></span>
+                <span class="text-xs font-medium truncate">Responsable absent / À relancer</span>
+              </div>
+              <span class="material-symbols-outlined text-[20px] checkmark-icon opacity-0">check_circle</span>
+            </button>
+            <button class="status-option w-full min-h-[48px] py-2.5 px-4 rounded-xl flex items-center justify-between text-left transition-all bg-brand-cream text-brand-text border border-brand-border hover:bg-brand-border" data-status="refus" onclick="App.selectReportStatus('refus')" type="button">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-3 h-3 rounded-full bg-rose-500 flex-shrink-0"></span>
+                <span class="text-xs font-medium truncate">Pas intéressé / Refus</span>
+              </div>
+              <span class="material-symbols-outlined text-[20px] checkmark-icon opacity-0">check_circle</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 2 : Contact Recueilli -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 border border-brand-border">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-bold text-brand-text flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-light"></span>
+              2. Contact recueilli
+            </label>
+            <span class="px-2.5 py-0.5 rounded-full bg-brand-cream border border-brand-border text-brand-muted text-[11px] font-semibold">Vérifié sur place</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-brand-muted mb-1">Nom complet du décisionnaire</label>
+              <div class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[18px]">person</span>
+                <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-light" id="reportContactName" type="text" placeholder="Ex: Kouassi Konan"/>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-brand-muted mb-1">Fonction / Rôle</label>
+              <div class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[18px]">badge</span>
+                <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-light" id="reportContactRole" type="text" placeholder="Gérant / Propriétaire"/>
+              </div>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] font-bold text-brand-muted mb-1">Téléphone & WhatsApp direct</label>
+              <div class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-3 text-emerald-600 text-[18px]">chat</span>
+                <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs font-bold border border-brand-border focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-light" id="reportContactPhone" type="tel" placeholder="+225 07 ..."/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3 : Commentaire & Notes Terrain -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm space-y-2 border border-brand-border">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-bold text-brand-text flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-light"></span>
+              3. Commentaire & Notes terrain
+            </label>
+          </div>
+          <textarea class="w-full p-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-light resize-none leading-relaxed" id="reportNotesTextarea" rows="3" placeholder="Notez les remarques du gérant, ses besoins..."></textarea>
+          <!-- Puces express d'insertion rapide -->
+          <div class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar">
+            <span class="text-[11px] font-bold text-brand-muted flex-shrink-0">Puces express:</span>
+            <button class="whitespace-nowrap px-3 py-1 rounded-full bg-brand-cream text-brand-text border border-brand-border text-[11px] font-semibold hover:bg-brand-border" onclick="App.appendTag('🔥 Forte affluence')" type="button">+ Affluence</button>
+            <button class="whitespace-nowrap px-3 py-1 rounded-full bg-brand-cream text-brand-text border border-brand-border text-[11px] font-semibold hover:bg-brand-border" onclick="App.appendTag('💡 Déjà QR')" type="button">+ QR Actif</button>
+            <button class="whitespace-nowrap px-3 py-1 rounded-full bg-brand-cream text-brand-text border border-brand-border text-[11px] font-semibold hover:bg-brand-border" onclick="App.appendTag('⚠️ Patron souvent absent')" type="button">+ Patron absent</button>
+          </div>
+        </div>
+
+        <!-- Section 4 : Prochaine Action -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 border border-brand-border">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-bold text-brand-text flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-light"></span>
+              4. Prochaine action CRM
+            </label>
+          </div>
+          <div class="grid grid-cols-3 gap-2" id="nextActionRow">
+            <button class="action-btn h-12 rounded-xl flex flex-col items-center justify-center text-center transition-all bg-brand-light text-white shadow-sm" data-action="send_doc" onclick="App.selectReportAction('send_doc')" type="button">
+              <span class="material-symbols-outlined text-[18px]">send</span>
+              <span class="text-[11px] font-semibold">Envoyer doc</span>
+            </button>
+            <button class="action-btn h-12 rounded-xl flex flex-col items-center justify-center text-center transition-all bg-brand-cream text-brand-text border border-brand-border hover:bg-brand-border" data-action="revenir" onclick="App.selectReportAction('revenir')" type="button">
+              <span class="material-symbols-outlined text-[18px]">storefront</span>
+              <span class="text-[11px] font-semibold">Revenir</span>
+            </button>
+            <button class="action-btn h-12 rounded-xl flex flex-col items-center justify-center text-center transition-all bg-brand-cream text-brand-text border border-brand-border hover:bg-brand-border" data-action="rappeler" onclick="App.selectReportAction('rappeler')" type="button">
+              <span class="material-symbols-outlined text-[18px]">phone_callback</span>
+              <span class="text-[11px] font-semibold">Rappeler</span>
+            </button>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-brand-muted mb-1">Date & Heure de relance / Rendez-vous</label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-brand-light text-[18px]">calendar_clock</span>
+              <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs font-medium border border-brand-border focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-light" id="reportFollowUpDate" type="text" placeholder="Ex: Jeudi prochain à 15h00"/>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Submission Bar -->
+      <div class="p-4 bg-white border-t border-brand-border">
+        <button class="w-full h-12 rounded-xl bg-brand-dark text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-brand-dark-hover shadow-md active:scale-[0.99] transition-all" id="submitVisitBtn" onclick="App.submitVisitReport()" type="button">
+          <span>ENREGISTRER LA VISITE & CONTINUER</span>
+          <span class="material-symbols-outlined text-[20px] text-brand-light">arrow_forward</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- BARRE DE NAVIGATION BASSE FIXE (Mobile Only < 1024px)     -->
+  <!-- ======================================================== -->
+  <nav class="fixed bottom-0 w-full z-40 pb-safe bg-brand-dark shadow-[0_-2px_12px_rgba(43,29,23,0.3)] border-t border-black/20 lg:hidden">
+    <div class="flex items-center justify-between h-16 px-1">
+      <a aria-current="page" class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] transition-colors text-brand-light font-bold" data-nav-target="accueil" href="#">
+        <span class="material-symbols-outlined text-[24px]">home</span>
+        <span class="text-[11px] tracking-wide mt-0.5">Accueil</span>
+      </a>
+      <a class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="carte" href="#">
+        <span class="material-symbols-outlined text-[24px]">map</span>
+        <span class="text-[11px] font-semibold tracking-wide mt-0.5">Carte</span>
+      </a>
+      <a class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="restaurants" href="#">
+        <span class="material-symbols-outlined text-[24px]">restaurant</span>
+        <span class="text-[11px] font-semibold tracking-wide mt-0.5">Restaurants</span>
+      </a>
+      <a class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="tournee" href="#">
+        <span class="material-symbols-outlined text-[24px]">route</span>
+        <span class="text-[11px] font-semibold tracking-wide mt-0.5">Tournée</span>
+      </a>
+      <a class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="historique" href="#">
+        <span class="material-symbols-outlined text-[24px]">history</span>
+        <span class="text-[11px] font-semibold tracking-wide mt-0.5">Historique</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- ======================================================== -->
+  <!-- MODALE : AJOUT RESTAURANT MANUEL                          -->
+  <!-- ======================================================== -->
+  <div id="addRestaurantModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden border border-brand-border flex flex-col">
+      <!-- Header -->
+      <div class="bg-brand-dark p-5 text-white flex items-center justify-between border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[28px] text-brand-light">add_location_alt</span>
+          <div>
+            <h2 class="font-extrabold text-base">Ajouter un restaurant</h2>
+            <p class="text-[11px] text-[#D7CCC8]">Saisie manuelle — prospection terrain</p>
+          </div>
+        </div>
+        <button onclick="App.closeAddRestaurantModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center" type="button">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+      <!-- Form -->
+      <form id="formAddRestaurant" class="p-5 flex flex-col gap-4 overflow-y-auto" onsubmit="App.handleAddRestaurantSubmit(event)">
+        <!-- Name -->
+        <div>
+          <label class="block text-[11px] font-bold text-brand-muted mb-1" for="addRestName">Nom du restaurant <span class="text-rose-500">*</span></label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[18px]">restaurant</span>
+            <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-light" id="addRestName" placeholder="Ex: Maquis Le Roi du Thiéboudienne" required type="text"/>
+          </div>
+        </div>
+        <!-- Commune + Quartier -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-brand-muted mb-1" for="addRestCommune">Commune</label>
+            <select class="w-full h-11 px-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-light" id="addRestCommune">
+              <option value="Cocody">Cocody</option>
+              <option value="Marcory">Marcory</option>
+              <option value="Plateau">Le Plateau</option>
+              <option value="Yopougon">Yopougon</option>
+              <option value="Treichville">Treichville</option>
+              <option value="Koumassi">Koumassi</option>
+              <option value="Port-Bouët">Port-Bouët</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-brand-muted mb-1" for="addRestQuartier">Quartier / Zone</label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[16px]">location_on</span>
+              <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-light" id="addRestQuartier" placeholder="Ex: Riviera 2" type="text"/>
+            </div>
+          </div>
+        </div>
+        <!-- Address -->
+        <div>
+          <label class="block text-[11px] font-bold text-brand-muted mb-1" for="addRestAddress">Adresse complète</label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[18px]">place</span>
+            <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-light" id="addRestAddress" placeholder="Ex: Rue des Jardins, près du carrefour..." type="text"/>
+          </div>
+        </div>
+        <!-- Phone + Cuisine -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-brand-muted mb-1" for="addRestPhone">Téléphone</label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[16px]">call</span>
+              <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-light" id="addRestPhone" placeholder="+225 07 ..." type="tel"/>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-brand-muted mb-1" for="addRestCuisine">Type de cuisine</label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[16px]">restaurant_menu</span>
+              <input class="w-full h-11 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-light" id="addRestCuisine" placeholder="Restaurant / Maquis" type="text"/>
+            </div>
+          </div>
+        </div>
+        <!-- Coords (optional) -->
+        <div>
+          <label class="block text-[11px] font-bold text-brand-muted mb-1">Coordonnées GPS <span class="text-brand-muted font-normal">(optionnel — géocodage auto sinon)</span></label>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[16px]">my_location</span>
+              <input class="w-full h-10 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-light" id="addRestLat" placeholder="Latitude ex: 5.3564" step="any" type="number"/>
+            </div>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-brand-muted text-[16px]">my_location</span>
+              <input class="w-full h-10 pl-10 pr-3 rounded-xl bg-brand-cream text-brand-text text-xs border border-brand-border focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-light" id="addRestLng" placeholder="Longitude ex: -3.9760" step="any" type="number"/>
+            </div>
+          </div>
+          <p class="text-[10px] text-brand-muted mt-1 italic">Si non renseignées, la position sera recherchée automatiquement via Nominatim / OpenStreetMap.</p>
+        </div>
+        <!-- Actions -->
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="App.closeAddRestaurantModal()" class="flex-1 h-12 rounded-xl bg-brand-cream text-brand-text border border-brand-border text-sm font-bold hover:bg-brand-border transition-colors">Annuler</button>
+          <button id="addRestSubmitBtn" type="submit" class="flex-[2] h-12 rounded-xl bg-brand-dark text-white text-sm font-bold hover:bg-brand-dark-hover shadow-md transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-brand-light">add_location_alt</span>
+            Créer le restaurant
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODALE : ÉDITION DU RAPPORT DE VISITE                    -->
+  <!-- ======================================================== -->
+  <div id="editVisitModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden border border-brand-border flex flex-col">
+      <!-- Header -->
+      <div class="bg-brand-dark p-5 text-white flex items-center justify-between border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[28px] text-brand-light">edit_note</span>
+          <div>
+            <h2 class="font-extrabold text-base">Modifier le rapport de visite</h2>
+            <p class="text-[11px] text-[#D7CCC8]" id="editVisitModalSubtitle">Mise à jour des informations du rapport</p>
+          </div>
+        </div>
+        <button onclick="App.closeEditVisitModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center" type="button">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="editVisitForm" onsubmit="App.handleUpdateVisitSubmit(event)" class="p-5 flex flex-col gap-4">
+        <input type="hidden" id="editVisitId" name="visit_id">
+
+        <!-- Statut / Résultat -->
+        <div>
+          <label class="block text-xs font-bold text-brand-text mb-1">Résultat du contact *</label>
+          <select id="editVisitResult" class="w-full h-11 px-3 rounded-xl border border-brand-border bg-brand-cream text-xs font-semibold text-brand-text focus:ring-2 focus:ring-brand-light focus:outline-none" required>
+            <option value="tres_interesse">Contact établi - Très intéressé</option>
+            <option value="interesse">Contact positif - Intéressé</option>
+            <option value="relancer">À relancer - Décisionnaire absent</option>
+            <option value="refus">Refus temporaire / Pas intéressé</option>
+            <option value="ferme">Établissement fermé / Inexistant</option>
+          </select>
+        </div>
+
+        <!-- Contact / Décisionnaire -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-brand-text mb-1">Nom & Prénom du contact</label>
+            <input type="text" id="editVisitContactName" class="w-full h-11 px-3 rounded-xl border border-brand-border bg-brand-cream text-xs font-semibold text-brand-text focus:ring-2 focus:ring-brand-light focus:outline-none" placeholder="ex: Falikou Fofana">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-brand-text mb-1">Fonction / Rôle</label>
+            <input type="text" id="editVisitContactRole" class="w-full h-11 px-3 rounded-xl border border-brand-border bg-brand-cream text-xs font-semibold text-brand-text focus:ring-2 focus:ring-brand-light focus:outline-none" placeholder="ex: Gérant / Propriétaire">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-brand-text mb-1">Téléphone direct du contact</label>
+          <input type="tel" id="editVisitContactPhone" class="w-full h-11 px-3 rounded-xl border border-brand-border bg-brand-cream text-xs font-semibold text-brand-text focus:ring-2 focus:ring-brand-light focus:outline-none" placeholder="ex: +225 07 00 00 00 00">
+        </div>
+
+        <!-- Notes / Compte-rendu -->
+        <div>
+          <label class="block text-xs font-bold text-brand-text mb-1">Compte-rendu & Notes de terrain *</label>
+          <textarea id="editVisitNotes" rows="3" class="w-full p-3 rounded-xl border border-brand-border bg-brand-cream text-xs font-semibold text-brand-text focus:ring-2 focus:ring-brand-light focus:outline-none resize-none" placeholder="Détail des échanges, objections, opportunités..." required></textarea>
+        </div>
+
+        <!-- Prochaine action & Date de relance -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-brand-text mb-1">Prochaine action</label>
+            <select id="editVisitNextAction" class="w-full h-11 px-3 rounded-xl border border-brand-border bg-brand-cream text-xs font-semibold text-brand-text focus:ring-2 focus:ring-brand-light focus:outline-none">
+              <option value="send_doc">Envoyer présentation / doc</option>
+              <option value="call_back">Rappeler le gérant</option>
+              <option value="revisit">Re-passer sur place</option>
+              <option value="sign">Rendez-vous de signature</option>
+              <option value="none">Aucune relance</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-brand-text mb-1">Date de relance prévue</label>
+            <input type="date" id="editVisitFollowUpDate" class="w-full h-11 px-3 rounded-xl border border-brand-border bg-brand-cream text-xs font-semibold text-brand-text focus:ring-2 focus:ring-brand-light focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Actions Footer -->
+        <div class="flex items-center gap-3 pt-3 border-t border-brand-border">
+          <button type="button" onclick="App.closeEditVisitModal()" class="flex-1 h-11 rounded-xl bg-brand-cream text-brand-text border border-brand-border text-xs font-bold hover:bg-brand-border transition-colors">
+            Annuler
+          </button>
+          <button type="submit" class="flex-1 h-11 rounded-xl bg-brand-dark text-white text-xs font-bold hover:bg-brand-dark-hover transition-colors shadow-md flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">save</span>
+            Enregistrer les modifications
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODALE : CONSULTATION DES RAPPORTS D'UN RESTAURANT       -->
+  <!-- ======================================================== -->
+  <div id="restaurantVisitsModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-brand-border flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="bg-brand-dark p-5 text-white flex items-center justify-between border-b border-white/10 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[28px] text-brand-light">history_edu</span>
+          <div>
+            <h2 class="font-extrabold text-base" id="restaurantVisitsModalTitle">Rapports de prospection</h2>
+            <p class="text-[11px] text-[#D7CCC8]" id="restaurantVisitsModalSubtitle">Historique des passages et comptes-rendus de l'équipe</p>
+          </div>
+        </div>
+        <button onclick="App.closeRestaurantVisitsModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center" type="button">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Body / Visits Container -->
+      <div class="overflow-y-auto p-5 flex flex-col gap-4 flex-1" id="restaurantVisitsModalList">
+        <!-- Rendu dynamique par App.openRestaurantVisitsModal(restaurantId) -->
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 bg-brand-cream border-t border-brand-border flex items-center justify-between gap-3 flex-shrink-0">
+        <span class="text-xs text-brand-muted font-medium">Partagé avec l'ensemble de l'équipe commerciale</span>
+        <button type="button" onclick="App.closeRestaurantVisitsModal()" class="px-4 py-2 rounded-xl bg-brand-dark text-white text-xs font-bold hover:bg-brand-dark-hover transition-colors">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODALE : PANNEAU ADMIN                                    -->
+  <!-- ======================================================== -->
+  <div id="adminPanelModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-brand-border flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="bg-brand-dark p-5 text-white flex items-center justify-between border-b border-white/10 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[28px] text-brand-light">admin_panel_settings</span>
+          <div>
+            <h2 class="font-extrabold text-base">Panneau Administrateur</h2>
+            <p class="text-[11px] text-[#D7CCC8]">Gestion des utilisateurs, rôles et communes assignées</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-brand-light bg-white/10 px-3 py-1 rounded-full border border-white/10" id="adminUserCountBadge">0 Membres</span>
+          <button onclick="App.closeAdminPanel()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center" type="button">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+      </div>
+      <!-- Body -->
+      <div class="overflow-y-auto flex-1 p-5 flex flex-col gap-6">
+        <!-- Users Grid -->
+        <section>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-brand-text flex items-center gap-2">
+              <span class="material-symbols-outlined text-brand-light text-[20px]">group</span>
+              Membres de l'équipe
+            </h3>
+            <button onclick="App.loadAdminData()" type="button" class="flex items-center gap-1 text-xs text-brand-muted hover:text-brand-dark font-semibold">
+              <span class="material-symbols-outlined text-[16px]">refresh</span> Actualiser
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="adminUsersGrid">
+            <!-- Rendu dynamique -->
+          </div>
+        </section>
+
+        <!-- Danger zone -->
+        <section class="bg-rose-50 rounded-2xl p-4 border border-rose-200 flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-rose-600 text-[20px]">warning</span>
+            <h3 class="text-sm font-bold text-rose-800">Zone Danger — Actions irréversibles</h3>
+          </div>
+          <p class="text-xs text-rose-700">Ces actions affectent l'ensemble de la base de données. Procéder avec la plus grande prudence.</p>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="App.resetAllVisits()" type="button" class="flex items-center gap-1.5 h-10 px-4 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm">
+              <span class="material-symbols-outlined text-[16px]">delete_sweep</span>
+              Réinitialiser toutes les visites
+            </button>
+            <button onclick="App.exportRestaurantsPDF(); App.exportVisitsPDF();" type="button" class="flex items-center gap-1.5 h-10 px-4 bg-rose-700 text-white rounded-xl text-xs font-bold hover:bg-rose-800 transition-colors shadow-sm">
+              <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+              Export complet (PDF)
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF Viewer Modal (inline, no popup blocker) -->
+  <div id="pdfViewerModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-5xl h-[90vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+      <div class="flex items-center justify-between px-4 py-3 bg-brand-dark text-white flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-rose-400 text-[20px]">picture_as_pdf</span>
+          <span id="pdfViewerTitle" class="text-sm font-bold">Rapport PDF</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <a id="pdfDownloadBtn" href="#" download class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-light hover:bg-brand-light/80 text-white rounded-lg text-xs font-bold transition-colors">
+            <span class="material-symbols-outlined text-[15px]">download</span>
+            <span>Télécharger</span>
+          </a>
+          <button onclick="App.closePdfViewer()" type="button" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+      </div>
+      <iframe id="pdfViewerFrame" src="" class="flex-1 w-full bg-white border-0"></iframe>
+    </div>
+  </div>
+
+  <!-- Notification Toast Flottant -->
+  <div id="toastNotification" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none w-11/12 max-w-sm">
+    <div class="bg-brand-dark/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-brand-light/30">
+      <span id="toastIcon" class="material-symbols-outlined text-[20px] text-brand-light">info</span>
+      <span id="toastText" class="text-[13px] font-medium leading-snug">Notification</span>
+    </div>
+  </div>
+
+  <!-- Leaflet JS CDN -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet MarkerCluster JS CDN -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <!-- jsPDF & autoTable CDN for PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- Application JS Engine -->
+  <script src="app.js"></script>
+</body>
+</html>

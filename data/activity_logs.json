@@ -1,0 +1,157 @@
+[
+    {
+        "id": "LOG-B38210",
+        "timestamp": "2026-10-10 23:53:15",
+        "action": "visit_deleted",
+        "description": "Visite VIS-F57953 supprimée par KOFFI",
+        "user_id": "USR-3A3827",
+        "user_name": "KOFFI",
+        "role": "AGENT",
+        "details": []
+    },
+    {
+        "id": "LOG-AA3EA3",
+        "timestamp": "2026-10-10 23:43:06",
+        "action": "visit_deleted",
+        "description": "Visite VIS-85FAC4 supprimée par KOFFI",
+        "user_id": "USR-3A3827",
+        "user_name": "KOFFI",
+        "role": "AGENT",
+        "details": []
+    },
+    {
+        "id": "LOG-2912B7",
+        "timestamp": "2026-10-10 23:37:38",
+        "action": "visit_deleted",
+        "description": "Visite VIS-A803F9 supprimée par KOFFI",
+        "user_id": "USR-3A3827",
+        "user_name": "KOFFI",
+        "role": "AGENT",
+        "details": []
+    },
+    {
+        "id": "LOG-E38FE4",
+        "timestamp": "2026-10-10 23:37:34",
+        "action": "visit_deleted",
+        "description": "Visite VIS-C7D3FB supprimée par KOFFI",
+        "user_id": "USR-3A3827",
+        "user_name": "KOFFI",
+        "role": "AGENT",
+        "details": []
+    },
+    {
+        "id": "LOG-406BF5",
+        "timestamp": "2026-10-10 23:01:40",
+        "action": "user_created",
+        "description": "Création du compte agent1@gmail.com par l'administrateur",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-3A3827",
+            "email": "agent1@gmail.com"
+        }
+    },
+    {
+        "id": "LOG-0DCE70",
+        "timestamp": "2026-10-10 22:56:16",
+        "action": "user_deleted",
+        "description": "Utilisateur USR-BE66FF supprimé",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-BE66FF"
+        }
+    },
+    {
+        "id": "LOG-540024",
+        "timestamp": "2026-10-10 22:42:29",
+        "action": "role_change",
+        "description": "Rôle de l'utilisateur USR-BE66FF changé en AGENT",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-BE66FF",
+            "new_role": "AGENT"
+        }
+    },
+    {
+        "id": "LOG-1871A6",
+        "timestamp": "2026-10-10 22:42:25",
+        "action": "role_change",
+        "description": "Rôle de l'utilisateur USR-BE66FF changé en ADMIN",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-BE66FF",
+            "new_role": "ADMIN"
+        }
+    },
+    {
+        "id": "LOG-DD6280",
+        "timestamp": "2026-10-10 22:33:17",
+        "action": "role_change",
+        "description": "Rôle de l'utilisateur USR-BE66FF changé en AGENT",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-BE66FF",
+            "new_role": "AGENT"
+        }
+    },
+    {
+        "id": "LOG-471CF5",
+        "timestamp": "2026-10-10 22:33:08",
+        "action": "role_change",
+        "description": "Rôle de l'utilisateur USR-BE66FF changé en ADMIN",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-BE66FF",
+            "new_role": "ADMIN"
+        }
+    },
+    {
+        "id": "LOG-C0BCC2",
+        "timestamp": "2026-10-10 14:11:56",
+        "action": "user_created",
+        "description": "Création du compte ange1@gmail.com par l'administrateur",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-BE66FF",
+            "email": "ange1@gmail.com"
+        }
+    },
+    {
+        "id": "LOG-EF0588",
+        "timestamp": "2026-10-10 14:10:06",
+        "action": "user_created",
+        "description": "Création du compte koffimarc@gmail.com par l'administrateur",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-E9403D",
+            "email": "koffimarc@gmail.com"
+        }
+    },
+    {
+        "id": "LOG-3DF032",
+        "timestamp": "2026-10-09 22:12:35",
+        "action": "migration",
+        "description": "Migration du schéma geocode_status sur 99 restaurants",
+        "user_id": null,
+        "user_name": "Système",
+        "role": "SYSTEM",
+        "details": {
+            "backup": "restaurants.json.bak"
+        }
+    }
+]

@@ -1,0 +1,32 @@
+[
+    {
+        "id": "USR-ADMIN01",
+        "name": "Fofana Falikou",
+        "email": "fofanafalikou068@gmail.com",
+        "phone": "",
+        "role": "ADMIN",
+        "assigned_communes": [
+            "Cocody",
+            "Marcory",
+            "Plateau",
+            "Yopougon",
+            "Treichville",
+            "Koumassi",
+            "Port-Bouët"
+        ],
+        "password_hash": "$2y$10$f1hl.P7XOJfuSA06tZ.PKOEyRqXmeb7mTZiYuOuiAFiOupZyIOtyq",
+        "created_at": "2026-10-10 11:30:00"
+    },
+    {
+        "id": "USR-3A3827",
+        "name": "KOFFI",
+        "email": "agent1@gmail.com",
+        "phone": "",
+        "role": "AGENT",
+        "assigned_communes": [
+            "Cocody"
+        ],
+        "password_hash": "$2y$10$aQzg3AHSdfCkvaZ5LkKEYui\/LJ4Ui6dQ82PvmFqvfw7Tnplja.vy.",
+        "created_at": "2026-10-10 23:01:39"
+    }
+]

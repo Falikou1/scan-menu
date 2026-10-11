@@ -1,0 +1,17 @@
+# Dossiers système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Fichiers PHP temporaires
+*.log
+*.tmp
+*.cache
+
+# Dossiers de configuration locaux
+stitch_source/
+
+# Fichiers de sauvegarde éditeur
+*.bak
+*.swp
+*~
