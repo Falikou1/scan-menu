@@ -1,0 +1,17 @@
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin.php"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/index.php"
+  to = "/index.html"
+  status = 200
