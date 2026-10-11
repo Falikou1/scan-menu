@@ -1,0 +1,16 @@
+# Railway configuration for Menu Scan PHP Backend
+# https://docs.railway.app/reference/config-as-code
+
+[build]
+# Utiliser le Dockerfile existant
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Redémarrage automatique en cas de crash
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Variable d'environnement par défaut (à surcharger dans Railway Dashboard)
+# ADMIN_PASSWORD=VotreMotDePasseSecurise
+# FRONTEND_URL=https://votre-projet.vercel.app

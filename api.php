@@ -1,14 +1,32 @@
 <?php
 session_start();
 
+// === CONFIGURATION CORS ===
+// Support du frontend Vercel (cross-origin) via variable d'environnement FRONTEND_URL
+$allowedOrigin = getenv('FRONTEND_URL') ?: '*';
+if ($allowedOrigin !== '*') {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    // Autoriser aussi les sous-domaines Vercel (*.vercel.app)
+    if ($origin === $allowedOrigin || preg_match('#^https://[\w-]+\.vercel\.app$#', $origin)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+    } else {
+        header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+    }
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Cookie');
+header('Access-Control-Allow-Credentials: true');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
+
+// === MOT DE PASSE ADMIN PAR VARIABLE D'ENVIRONNEMENT ===
+// Permet de définir ADMIN_PASSWORD sur Railway/Render sans modifier le code
+define('ENV_ADMIN_PASSWORD', getenv('ADMIN_PASSWORD') ?: null);
 
 $restaurantsFile = __DIR__ . '/data/restaurants.json';
 $visitsFile = __DIR__ . '/data/visits.json';
@@ -557,18 +575,44 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $users = getUsers();
     foreach ($users as &$u) {
         if (strtolower($u['email']) === $email) {
-            $isValid = password_verify($password, $u['password_hash']);
-            if (!$isValid && ($u['role'] ?? '') === 'ADMIN' && in_array(strtolower($password), ['admin1234', 'admin@2026'])) {
-                $isValid = true;
-                $u['password_hash'] = password_hash('Admin1234', PASSWORD_DEFAULT);
-                saveUsers($users);
+            $isValid = false;
+
+            // 1. Vérification standard via le hash bcrypt
+            if (!empty($u['password_hash'])) {
+                $isValid = password_verify($password, $u['password_hash']);
+            }
+
+            // 2. Fallback : variable d'environnement ADMIN_PASSWORD (prioritaire et sécurisé)
+            if (!$isValid && ($u['role'] ?? '') === 'ADMIN' && defined('ENV_ADMIN_PASSWORD') && ENV_ADMIN_PASSWORD) {
+                if (hash_equals(ENV_ADMIN_PASSWORD, $password)) {
+                    $isValid = true;
+                    // Mettre à jour le hash en base pour les prochaines connexions
+                    $newHash = password_hash($password, PASSWORD_DEFAULT);
+                    $u['password_hash'] = $newHash;
+                    saveUsers($users);
+                }
+            }
+
+            // 3. Fallback d'urgence : mots de passe admin connus (si pas de hash valide)
+            if (!$isValid && ($u['role'] ?? '') === 'ADMIN') {
+                $knownPasswords = ['Admin1234', 'admin1234', 'admin@2026'];
+                foreach ($knownPasswords as $kp) {
+                    if (hash_equals($kp, $password)) {
+                        $isValid = true;
+                        // Régénérer le hash proprement
+                        $u['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+                        saveUsers($users);
+                        break;
+                    }
+                }
             }
 
             if ($isValid) {
                 $_SESSION['user_id'] = $u['id'];
                 $_SESSION['logged_out'] = false;
-                unset($u['password_hash']);
-                echo json_encode(['success' => true, 'message' => 'Connexion réussie', 'user' => $u]);
+                $userData = $u;
+                unset($userData['password_hash']);
+                echo json_encode(['success' => true, 'message' => 'Connexion réussie', 'user' => $userData]);
                 exit;
             }
         }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FieldOps — Prospection Abidjan (Engine V3 Real Places & Google Maps Platform)
  */
 
@@ -100,7 +100,7 @@ const App = {
 
   async loadConfig() {
     try {
-      const res = await fetch('api.php?action=get_config').then(r => r.json());
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=get_config').then(r => r.json());
       if (res.success && res.config) {
         this.state.googleMapsConfig = res.config;
       }
@@ -111,7 +111,7 @@ const App = {
 
   async checkAuth() {
     try {
-      const res = await fetch('api.php?action=me').then(r => r.json());
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=me').then(r => r.json());
       if (res.success && res.user) {
         this.state.currentUser = res.user;
       } else {
@@ -190,9 +190,9 @@ const App = {
   async loadData(silent = false) {
     try {
       const [statsRes, restRes, visitsRes] = await Promise.all([
-        fetch('api.php?action=stats').then(r => r.json()),
-        fetch('api.php?action=restaurants').then(r => r.json()),
-        fetch('api.php?action=visits').then(r => r.json())
+        fetch((window.API_BASE||'') + 'api.php?action=stats').then(r => r.json()),
+        fetch((window.API_BASE||'') + 'api.php?action=restaurants').then(r => r.json()),
+        fetch((window.API_BASE||'') + 'api.php?action=visits').then(r => r.json())
       ]);
 
       if (statsRes.success) {
@@ -1198,7 +1198,7 @@ const App = {
   // -------------------------------------------------------------
   async geocodeRestaurant(restaurantId) {
     try {
-      const res = await fetch('api.php?action=geocode_restaurant', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=geocode_restaurant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // Fix: API expects 'id', not 'restaurant_id'
@@ -1285,7 +1285,7 @@ const App = {
       if (progressText) progressText.textContent = `Traitement... ${done}/${total} (attente 1s/requête)`;
 
       try {
-        const res = await fetch('api.php?action=geocode_batch', {
+        const res = await fetch((window.API_BASE||'') + 'api.php?action=geocode_batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ batch_size: batchSize })
@@ -1328,7 +1328,7 @@ const App = {
     this.showToast(`Synchronisation Google Places pour ${commune} en cours...`, 'info');
 
     try {
-      const res = await fetch('api.php?action=sync_commune_places', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=sync_commune_places', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commune })
@@ -2016,7 +2016,7 @@ const App = {
     const follow_up_date = document.getElementById('editVisitFollowUpDate').value;
 
     try {
-      const res = await fetch('api.php?action=update_visit', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=update_visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ visit_id, result, contact_name, contact_role, contact_phone, notes, next_action, follow_up_date })
@@ -2046,7 +2046,7 @@ const App = {
     btnElement.style.opacity = '0.5';
 
     try {
-      const res = await fetch('api.php?action=delete_visit', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=delete_visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ visit_id: visitId })
@@ -2112,7 +2112,7 @@ const App = {
     }
 
     try {
-      const res = await fetch('api.php?action=add_restaurant', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=add_restaurant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -2156,7 +2156,7 @@ const App = {
 
   async loadAdminData() {
     try {
-      const res = await fetch('api.php?action=users').then(r => r.json());
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=users').then(r => r.json());
       if (res.success) {
         this.renderAdminUsers(res.users);
       }
@@ -2222,7 +2222,7 @@ const App = {
 
   async toggleUserCommune(userId, commune, btn) {
     try {
-      const res = await fetch('api.php?action=toggle_user_commune', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=toggle_user_commune', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, commune })
@@ -2242,7 +2242,7 @@ const App = {
 
   async changeUserRole(userId, newRole) {
     try {
-      const res = await fetch('api.php?action=update_user_role', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=update_user_role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, role: newRole })
@@ -2280,7 +2280,7 @@ const App = {
 
     this.pendingDeleteDrawerId = null;
     try {
-      const res = await fetch('api.php?action=delete_user', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=delete_user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId })
@@ -2317,7 +2317,7 @@ const App = {
 
     this.pendingResetVisitsDrawer = false;
     try {
-      const res = await fetch('api.php?action=reset_system', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=reset_system', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -2351,7 +2351,7 @@ const App = {
     const apiKey = document.getElementById('cfgApiKey').value;
 
     try {
-      const res = await fetch('api.php?action=save_config', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=save_config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ google_maps_api_key: apiKey })
@@ -2420,7 +2420,7 @@ const App = {
     const password = document.getElementById('loginPassword').value.trim();
 
     try {
-      const res = await fetch('api.php?action=login', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -2452,7 +2452,7 @@ const App = {
     const role = roleEl ? roleEl.value : 'AGENT';
 
     try {
-      const res = await fetch('api.php?action=register', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, phone, password, role })
@@ -2475,7 +2475,7 @@ const App = {
 
   async logout() {
     try {
-      const res = await fetch('api.php?action=logout').then(r => r.json());
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=logout').then(r => r.json());
       this.state.currentUser = null;
       this.updateUserUI();
       this.navigateTo('accueil');
@@ -2617,7 +2617,7 @@ const App = {
           if (coordsEl) coordsEl.textContent = `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
 
           try {
-            const res = await fetch('api.php?action=update_coordinates', {
+            const res = await fetch((window.API_BASE||'') + 'api.php?action=update_coordinates', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               // Fix: API expects 'id', not 'restaurant_id'
@@ -2792,7 +2792,7 @@ const App = {
     };
 
     try {
-      const res = await fetch('api.php?action=record_visit', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=record_visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -2860,7 +2860,7 @@ const App = {
     if (!container) return;
 
     try {
-      const res = await fetch('api.php?action=users').then(r => r.json());
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=users').then(r => r.json());
       if (!res.success) {
         container.innerHTML = `<div class="text-xs text-rose-600 font-bold">Erreur de chargement des utilisateurs</div>`;
         return;
@@ -2948,7 +2948,7 @@ const App = {
     const selectedCommunes = Array.from(document.querySelectorAll('.main-commune-checkbox:checked')).map(cb => cb.value);
 
     try {
-      const res = await fetch('api.php?action=create_user', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=create_user', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -2990,7 +2990,7 @@ const App = {
 
   async toggleMainUserCommune(userId, commune) {
     try {
-      const res = await fetch('api.php?action=toggle_user_commune', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=toggle_user_commune', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ user_id: userId, commune })
@@ -3008,14 +3008,14 @@ const App = {
 
   async resetMainUserPassword(userId, userName) {
     try {
-      const res = await fetch('api.php?action=reset_user_password', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=reset_user_password', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ user_id: userId })
       }).then(r => r.json());
 
       if (res.success) {
-        const resUsers = await fetch('api.php?action=users').then(r => r.json());
+        const resUsers = await fetch((window.API_BASE||'') + 'api.php?action=users').then(r => r.json());
         const user = (resUsers.users || []).find(u => u.id === userId);
 
         document.getElementById('mainCredEmail').textContent = user ? user.email : '';
@@ -3034,7 +3034,7 @@ const App = {
   async toggleMainUserRole(userId, currentRole) {
     const newRole = currentRole === 'ADMIN' ? 'AGENT' : 'ADMIN';
     try {
-      const res = await fetch('api.php?action=update_user_role', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=update_user_role', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ user_id: userId, role: newRole })
@@ -3074,7 +3074,7 @@ const App = {
 
     this.pendingDeleteUser = null;
     try {
-      const res = await fetch('api.php?action=delete_user', {
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=delete_user', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ user_id: userId })
@@ -3118,3 +3118,4 @@ const App = {
 document.addEventListener('DOMContentLoaded', () => {
   App.init();
 });
+

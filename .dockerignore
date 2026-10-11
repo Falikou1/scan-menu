@@ -4,3 +4,6 @@ stitch_source/
 *.log
 *.tmp
 *.bak
+*.swp
+node_modules/
+# Ne pas exclure index.html, admin.html, vercel.json (utiles même pour Docker)
