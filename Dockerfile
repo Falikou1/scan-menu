@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Installer les extensions nécessaires
+# Installer les dépendances curl pour la géolocalisation
 RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     && docker-php-ext-install curl \
@@ -9,32 +9,28 @@ RUN apt-get update && apt-get install -y \
 # Activer le module de réécriture Apache
 RUN a2enmod rewrite
 
+# Support du port dynamique $PORT (Railway, Render, etc.) - défaut 80
+ENV PORT=80
+RUN sed -i 's/Listen 80/Listen ${PORT}/' /etc/apache2/ports.conf \
+    && sed -i 's/:80/:${PORT}/' /etc/apache2/sites-available/000-default.conf
+
 # Configurer Apache pour autoriser .htaccess et CORS
 RUN printf '<Directory /var/www/html>\n    AllowOverride All\n    Require all granted\n</Directory>\n' > /etc/apache2/conf-available/app.conf && \
     a2enconf app
 
-# Définir le répertoire de travail
+# Répertoire de travail
 WORKDIR /var/www/html
 
-# Copier le projet (sauf le dossier data qui sera sur volume persistant)
+# Copier l'ensemble des fichiers
 COPY . /var/www/html/
 
-# Créer le dossier data s'il n'existe pas (sera écrasé par le volume Railway)
-RUN mkdir -p /var/www/html/data
+# Sauvegarder les données initiales pour auto-init
+RUN cp -r /var/www/html/data /var/www/html/data_defaults
 
-# Sauvegarder une copie des données initiales pour l'initialisation du volume
-RUN cp -r /var/www/html/data /var/www/html/data_initial
-
-# Permissions Apache
+# Permissions d'écriture pour Apache
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html/data
+    && chmod -R 777 /var/www/html/data
 
-# Script d'initialisation : copier les données initiales si le volume est vide
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Port exposé
 EXPOSE 80
 
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["apache2-foreground"]

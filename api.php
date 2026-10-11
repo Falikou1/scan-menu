@@ -34,6 +34,19 @@ $usersFile = __DIR__ . '/data/users.json';
 $configFile = __DIR__ . '/data/config.json';
 $activityLogsFile = __DIR__ . '/data/activity_logs.json';
 
+// Initialisation automatique des données si un volume persistant vide est monté
+if (!is_dir(__DIR__ . '/data')) {
+    @mkdir(__DIR__ . '/data', 0777, true);
+}
+if (!file_exists($usersFile) && is_dir(__DIR__ . '/data_defaults')) {
+    foreach (glob(__DIR__ . '/data_defaults/*.json') as $defaultFile) {
+        $target = __DIR__ . '/data/' . basename($defaultFile);
+        if (!file_exists($target)) {
+            @copy($defaultFile, $target);
+        }
+    }
+}
+
 // --- DATA ACCESS HELPERS ---
 
 function getConfig() {
