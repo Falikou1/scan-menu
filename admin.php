@@ -97,7 +97,7 @@ if (($currentUser['role'] ?? '') !== 'ADMIN') {
 
   <!-- EN-TÊTE ADMIN RESPONSIVE -->
   <header class="bg-brand-dark text-white shadow-md border-b border-white/10 sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2">
       <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
         <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-light flex items-center justify-center text-white shadow-sm font-extrabold text-sm sm:text-base flex-shrink-0">
           MS
