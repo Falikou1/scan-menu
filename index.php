@@ -1,3 +1,26 @@
+<?php
+session_start();
+$isLoggedIn = false;
+$currentUser = null;
+if (!empty($_SESSION['user_id']) && empty($_SESSION['logged_out'])) {
+    $usersFile = __DIR__ . '/data/users.json';
+    if (file_exists($usersFile)) {
+        $users = json_decode(file_get_contents($usersFile), true) ?: [];
+        foreach ($users as $u) {
+            if ($u['id'] === $_SESSION['user_id']) {
+                $isLoggedIn = true;
+                $currentUser = $u;
+                break;
+            }
+        }
+    }
+}
+
+if (!$isLoggedIn) {
+    header('Location: login.php?login=required');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -186,7 +209,7 @@
         -webkit-tap-highlight-color: transparent;
       }
       .pb-safe {
-        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.75rem);
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3.75rem);
       }
       @media (min-width: 1024px) {
         .pb-safe {
@@ -320,34 +343,36 @@
   <!-- EN-TÊTE FIXE SUPÉRIEURE (Menu Scan Master Header)         -->
   <!-- ======================================================== -->
   <header class="fixed top-0 left-0 right-0 lg:left-64 z-40 bg-brand-dark text-white shadow-[0_2px_10px_rgba(43,29,23,0.25)] border-b border-black/10">
-    <div class="pt-safe">
-      <div class="h-16 px-4 sm:px-6 flex items-center justify-between">
-        <div class="flex items-center gap-3 cursor-pointer" onclick="App.navigateTo('accueil')">
-          <div class="bg-white rounded-lg p-1 shadow-sm flex items-center justify-center flex-shrink-0 lg:hidden">
-            <img alt="Menu Scan Logo" class="h-8 w-auto max-w-[110px] object-contain" src="assets/logo.png"/>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-white font-bold text-[17px] leading-tight tracking-tight">Menu Scan</span>
-            <span class="text-[#D7CCC8] text-[10px] font-bold uppercase tracking-wider" id="headerScreenSubtitle">Accueil</span>
-          </div>
+    <div class="h-14 px-4 sm:px-6 flex items-center justify-between" style="padding-top: max(0px, env(safe-area-inset-top, 0px))">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="App.navigateTo('accueil')">
+        <div class="bg-white rounded-lg p-1 shadow-sm flex items-center justify-center flex-shrink-0 lg:hidden">
+          <img alt="Menu Scan Logo" class="h-7 w-auto max-w-[100px] object-contain" src="assets/logo.png"/>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#EFE6DC] text-[11px] font-semibold border border-white/10 mr-1">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Google Places API Integration
-          </span>
-          <button id="headerLoginBtn" onclick="App.openAuthModal('login')" class="px-3.5 py-1.5 rounded-xl bg-brand-light hover:bg-brand-light-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95" type="button">
-            <span class="material-symbols-outlined text-[18px]">login</span>
-            <span>Se connecter</span>
-          </button>
-          <div id="headerUserProfile" class="hidden relative flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-white/10 transition-colors" onclick="App.toggleAuthOrProfile()">
-            <div class="w-8 h-8 rounded-full bg-brand-light text-white font-bold flex items-center justify-center text-xs ring-2 ring-brand-light/60 shadow-sm" id="headerAvatarInitial">
-              ?
-            </div>
-            <span class="hidden md:inline-block text-xs font-bold text-white" id="headerUserName">Utilisateur</span>
-            <button onclick="event.stopPropagation(); App.logout();" class="w-7 h-7 rounded-full hover:bg-white/20 text-[#D7CCC8] hover:text-white flex items-center justify-center transition-colors" title="Déconnexion" type="button">
-              <span class="material-symbols-outlined text-[16px]">logout</span>
-            </button>
+        <div class="flex flex-col">
+          <span class="text-white font-bold text-[16px] leading-tight tracking-tight">Menu Scan</span>
+          <span class="text-[#D7CCC8] text-[10px] font-bold uppercase tracking-wider" id="headerScreenSubtitle">Accueil</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#EFE6DC] text-[11px] font-semibold border border-white/10 mr-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Google Places API Integration
+        </span>
+        <button id="headerLoginBtn" onclick="App.openAuthModal('login')" class="px-3.5 py-1.5 rounded-xl bg-brand-light hover:bg-brand-light-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95" type="button">
+          <span class="material-symbols-outlined text-[18px]">login</span>
+          <span>Se connecter</span>
+        </button>
+        <a id="headerAdminLink" href="admin.php" target="_blank" class="hidden inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs font-bold border border-amber-500/30 transition-all shadow-sm" title="Ouvrir le panneau d'administration">
+          <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+          <span class="hidden sm:inline">Administration</span>
+        </a>
+        <div id="headerUserProfile" class="hidden relative flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-white/10 transition-colors" onclick="App.toggleAuthOrProfile()">
+          <div class="w-8 h-8 rounded-full bg-brand-light text-white font-bold flex items-center justify-center text-xs ring-2 ring-brand-light/60 shadow-sm" id="headerAvatarInitial">
+            ?
           </div>
+          <span class="hidden md:inline-block text-xs font-bold text-white" id="headerUserName">Utilisateur</span>
+          <button onclick="event.stopPropagation(); App.logout();" class="w-7 h-7 rounded-full hover:bg-white/20 text-[#D7CCC8] hover:text-white flex items-center justify-center transition-colors" title="Déconnexion" type="button">
+            <span class="material-symbols-outlined text-[16px]">logout</span>
+          </button>
         </div>
       </div>
     </div>
@@ -356,7 +381,7 @@
   <!-- ======================================================== -->
   <!-- CONTENEUR DES PAGES / ONGLETS PRINCIPAUX                 -->
   <!-- ======================================================== -->
-  <main class="flex flex-col relative w-full pt-16 pb-safe lg:pb-12 bg-brand-cream min-h-screen lg:pl-64">
+  <main class="flex flex-col relative w-full pt-14 pb-safe lg:pb-12 bg-brand-cream min-h-screen lg:pl-64">
 
     <!-- ---------------------------------------------------- -->
     <!-- ONGLET 1 : ACCUEIL / DASHBOARD DE COUVERTURE ABIDJAN  -->
@@ -1463,27 +1488,31 @@
   <!-- ======================================================== -->
   <!-- BARRE DE NAVIGATION BASSE FIXE (Mobile Only < 1024px)     -->
   <!-- ======================================================== -->
-  <nav class="fixed bottom-0 w-full z-40 pb-safe bg-brand-dark shadow-[0_-2px_12px_rgba(43,29,23,0.3)] border-t border-black/20 lg:hidden">
-    <div class="flex items-center justify-between h-16 px-1">
-      <a aria-current="page" class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] transition-colors text-brand-light font-bold" data-nav-target="accueil" href="#">
-        <span class="material-symbols-outlined text-[24px]">home</span>
-        <span class="text-[11px] tracking-wide mt-0.5">Accueil</span>
+  <nav class="fixed bottom-0 w-full z-40 bg-brand-dark shadow-[0_-2px_12px_rgba(43,29,23,0.3)] border-t border-black/20 lg:hidden" style="padding-bottom: env(safe-area-inset-bottom, 0px)">
+    <div class="flex items-stretch justify-between h-14 px-1">
+      <a aria-current="page" class="flex-1 flex flex-col items-center justify-center min-h-[44px] transition-colors text-brand-light font-bold" data-nav-target="accueil" href="#">
+        <span class="material-symbols-outlined text-[22px]">home</span>
+        <span class="text-[10px] tracking-wide mt-0.5">Accueil</span>
       </a>
-      <a class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="carte" href="#">
-        <span class="material-symbols-outlined text-[24px]">map</span>
-        <span class="text-[11px] font-semibold tracking-wide mt-0.5">Carte</span>
+      <a class="flex-1 flex flex-col items-center justify-center min-h-[44px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="carte" href="#">
+        <span class="material-symbols-outlined text-[22px]">map</span>
+        <span class="text-[10px] font-semibold tracking-wide mt-0.5">Carte</span>
       </a>
-      <a class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="restaurants" href="#">
-        <span class="material-symbols-outlined text-[24px]">restaurant</span>
-        <span class="text-[11px] font-semibold tracking-wide mt-0.5">Restaurants</span>
+      <a class="flex-1 flex flex-col items-center justify-center min-h-[44px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="restaurants" href="#">
+        <span class="material-symbols-outlined text-[22px]">restaurant</span>
+        <span class="text-[10px] font-semibold tracking-wide mt-0.5">Restaurants</span>
       </a>
-      <a class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="tournee" href="#">
-        <span class="material-symbols-outlined text-[24px]">route</span>
-        <span class="text-[11px] font-semibold tracking-wide mt-0.5">Tournée</span>
+      <a class="flex-1 flex flex-col items-center justify-center min-h-[44px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="tournee" href="#">
+        <span class="material-symbols-outlined text-[22px]">route</span>
+        <span class="text-[10px] font-semibold tracking-wide mt-0.5">Tournée</span>
       </a>
-      <a class="flex-1 flex flex-col items-center justify-center h-full min-h-[48px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="historique" href="#">
-        <span class="material-symbols-outlined text-[24px]">history</span>
-        <span class="text-[11px] font-semibold tracking-wide mt-0.5">Historique</span>
+      <a class="flex-1 flex flex-col items-center justify-center min-h-[44px] text-[#D7CCC8] hover:text-white transition-colors" data-nav-target="historique" href="#">
+        <span class="material-symbols-outlined text-[22px]">history</span>
+        <span class="text-[10px] font-semibold tracking-wide mt-0.5">Historique</span>
+      </a>
+      <a class="hidden flex-1 flex flex-col items-center justify-center min-h-[44px] text-amber-300 hover:text-white transition-colors" id="mobileBottomAdminNav" data-nav-target="admin" href="#">
+        <span class="material-symbols-outlined text-[22px]">admin_panel_settings</span>
+        <span class="text-[10px] font-bold tracking-tight mt-0.5">Admin</span>
       </a>
     </div>
   </nav>
@@ -1812,6 +1841,8 @@
   <!-- jsPDF & autoTable CDN for PDF Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- API Configuration -->
+  <script src="config.js"></script>
   <!-- Application JS Engine -->
   <script src="app.js"></script>
 </body>

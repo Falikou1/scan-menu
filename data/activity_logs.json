@@ -1,5 +1,68 @@
 [
     {
+        "id": "LOG-862F03",
+        "timestamp": "2026-10-12 14:48:40",
+        "action": "LOGIN",
+        "description": "Connexion réussie de Fofana Falikou",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "email": "fofanafalikou068@gmail.com",
+            "role": "ADMIN"
+        }
+    },
+    {
+        "id": "LOG-B66E2C",
+        "timestamp": "2026-10-12 14:44:11",
+        "action": "REGISTER",
+        "description": "Nouvel utilisateur inscrit : Agent Test (AGENT)",
+        "user_id": "USR-B50C39",
+        "user_name": "Agent Test",
+        "role": "AGENT",
+        "details": {
+            "user_id": "USR-B50C39",
+            "email": "agent_test_1211955566@menuscan.ci"
+        }
+    },
+    {
+        "id": "LOG-3EC4E2",
+        "timestamp": "2026-10-12 14:43:15",
+        "action": "LOGOUT",
+        "description": "Déconnexion de Fofana Falikou",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-ADMIN01"
+        }
+    },
+    {
+        "id": "LOG-3CE9DD",
+        "timestamp": "2026-10-12 14:43:15",
+        "action": "LOGIN",
+        "description": "Connexion réussie de Fofana Falikou",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "email": "fofanafalikou068@gmail.com",
+            "role": "ADMIN"
+        }
+    },
+    {
+        "id": "LOG-E0FF73",
+        "timestamp": "2026-10-12 00:36:14",
+        "action": "user_deleted",
+        "description": "Utilisateur USR-3A3827 supprimé",
+        "user_id": "USR-ADMIN01",
+        "user_name": "Fofana Falikou",
+        "role": "ADMIN",
+        "details": {
+            "user_id": "USR-3A3827"
+        }
+    },
+    {
         "id": "LOG-B38210",
         "timestamp": "2026-10-10 23:53:15",
         "action": "visit_deleted",

@@ -40,16 +40,16 @@ const App = {
   async init() {
     this.bindEvents();
     this.initUserGeolocation();
-    await this.checkAuth();
+    const isAuthed = await this.checkAuth();
+    if (!isAuthed) return;
     await this.loadConfig();
     await this.loadData();
     this.renderCurrentTab();
 
-    // Si redirection depuis admin.php (tentative d'accès non autorisé)
+    // Si tentative d'accès non autorisé à l'admin
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('login') === 'required') {
-      this.showToast('Accès restreint. Veuillez vous connecter avec un compte Administrateur.', 'warning');
-      this.openAuthModal('login');
+    if (urlParams.get('error') === 'admin_only') {
+      this.showToast('Accès restreint. Cet espace est réservé aux Administrateurs.', 'warning');
     }
 
     // Polling de synchronisation live toutes les 15 secondes
@@ -100,7 +100,7 @@ const App = {
 
   async loadConfig() {
     try {
-      const res = await fetch((window.API_BASE||'') + 'api.php?action=get_config').then(r => r.json());
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=get_config', { credentials: 'include' }).then(r => r.json());
       if (res.success && res.config) {
         this.state.googleMapsConfig = res.config;
       }
@@ -111,17 +111,21 @@ const App = {
 
   async checkAuth() {
     try {
-      const res = await fetch((window.API_BASE||'') + 'api.php?action=me').then(r => r.json());
+      const res = await fetch((window.API_BASE||'') + 'api.php?action=me', { credentials: 'include' }).then(r => r.json());
       if (res.success && res.user) {
         this.state.currentUser = res.user;
+        this.updateUserUI();
+        return true;
       } else {
         this.state.currentUser = null;
+        window.location.href = 'login.php?login=required';
+        return false;
       }
-      this.updateUserUI();
     } catch (e) {
       console.warn('Erreur vérification session auth:', e);
       this.state.currentUser = null;
-      this.updateUserUI();
+      window.location.href = 'login.php?login=required';
+      return false;
     }
   },
 
@@ -142,6 +146,8 @@ const App = {
     const visitModalAvatar = document.getElementById('visitModalAvatar');
     const reportModalAvatar = document.getElementById('reportModalAvatar');
     const sidebarAdminNavItem = document.getElementById('sidebarAdminNavItem');
+    const mobileBottomAdminNav = document.getElementById('mobileBottomAdminNav');
+    const headerAdminLink = document.getElementById('headerAdminLink');
 
     if (user) {
       const initial = (user.name || 'U').charAt(0).toUpperCase();
@@ -163,37 +169,31 @@ const App = {
 
       if (user.role === 'ADMIN') {
         if (sidebarAdminNavItem) sidebarAdminNavItem.classList.remove('hidden');
+        if (mobileBottomAdminNav) mobileBottomAdminNav.classList.remove('hidden');
+        if (headerAdminLink) headerAdminLink.classList.remove('hidden');
       } else {
         if (sidebarAdminNavItem) sidebarAdminNavItem.classList.add('hidden');
+        if (mobileBottomAdminNav) mobileBottomAdminNav.classList.add('hidden');
+        if (headerAdminLink) headerAdminLink.classList.add('hidden');
         if (this.state.currentTab === 'admin') this.navigateTo('accueil');
       }
     } else {
-      if (sidebarGuestCard) sidebarGuestCard.classList.remove('hidden');
-      if (sidebarUserCard) sidebarUserCard.classList.add('hidden');
-      if (headerLoginBtn) headerLoginBtn.classList.remove('hidden');
-      if (headerUserProfile) headerUserProfile.classList.add('hidden');
-
-      if (sidebarUserName) sidebarUserName.textContent = 'Non connecté';
-      if (sidebarUserRole) sidebarUserRole.textContent = 'Visiteur';
-      if (sidebarAvatarInitial) sidebarAvatarInitial.textContent = '?';
-
-      if (headerUserName) headerUserName.textContent = 'Se connecter';
-      if (headerAvatarInitial) headerAvatarInitial.textContent = '?';
-      if (visitModalAvatar) visitModalAvatar.textContent = '?';
-      if (reportModalAvatar) reportModalAvatar.textContent = '?';
-
-      if (sidebarAdminNavItem) sidebarAdminNavItem.classList.add('hidden');
-      if (this.state.currentTab === 'admin') this.navigateTo('accueil');
+      window.location.href = 'login.php?login=required';
     }
   },
 
   async loadData(silent = false) {
     try {
       const [statsRes, restRes, visitsRes] = await Promise.all([
-        fetch((window.API_BASE||'') + 'api.php?action=stats').then(r => r.json()),
-        fetch((window.API_BASE||'') + 'api.php?action=restaurants').then(r => r.json()),
-        fetch((window.API_BASE||'') + 'api.php?action=visits').then(r => r.json())
+        fetch((window.API_BASE||'') + 'api.php?action=stats', { credentials: 'include' }).then(r => r.json()),
+        fetch((window.API_BASE||'') + 'api.php?action=restaurants', { credentials: 'include' }).then(r => r.json()),
+        fetch((window.API_BASE||'') + 'api.php?action=visits', { credentials: 'include' }).then(r => r.json())
       ]);
+
+      if (statsRes.auth_required || restRes.auth_required || visitsRes.auth_required) {
+        window.location.href = 'login.php?login=required';
+        return;
+      }
 
       if (statsRes.success) {
         this.state.stats = statsRes.stats;
@@ -454,11 +454,11 @@ const App = {
             <span class="text-[11px] font-bold tracking-wide uppercase">${c.a_visiter} À VISITER</span>
           </div>
         </div>
-        <div class="flex items-center justify-between text-stone-500 text-xs pt-1">
+        <div class="flex flex-wrap items-center justify-between text-stone-500 text-xs pt-1 gap-1">
           <span><strong class="text-brand-text font-semibold">${c.total}</strong> restaurants</span>
-          <span>•</span>
+          <span class="hidden xs:inline">•</span>
           <span><strong class="text-emerald-700 font-semibold">${c.visites}</strong> visités</span>
-          <span>•</span>
+          <span class="hidden xs:inline">•</span>
           <span class="font-semibold text-brand-dark">${c.coverage_pct}% couvert</span>
         </div>
         <div class="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-200">
@@ -1517,8 +1517,8 @@ const App = {
         ` : ''}
 
         <!-- BARRE D'ACTIONS DU RAPPORT (PDF, PARTAGER, ÉDITER, SUPPRIMER) -->
-        <div class="flex items-center justify-between pt-3 border-t border-brand-border/60 text-xs mt-1">
-          <div class="flex items-center gap-1.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-brand-border/60 text-xs mt-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
             <button onclick="App.exportSingleVisitPDF('${v.id}')" type="button" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-brand-cream hover:bg-brand-border text-brand-dark font-bold text-[11px] border border-brand-border transition-all shadow-2xs" title="Télécharger la fiche rapport au format PDF">
               <span class="material-symbols-outlined text-[15px] text-rose-700">picture_as_pdf</span>
               <span>Fiche PDF</span>
@@ -2475,15 +2475,12 @@ const App = {
 
   async logout() {
     try {
-      const res = await fetch((window.API_BASE||'') + 'api.php?action=logout').then(r => r.json());
-      this.state.currentUser = null;
-      this.updateUserUI();
-      this.navigateTo('accueil');
-      this.showToast('Déconnexion effectuée avec succès.', 'info');
+      await fetch((window.API_BASE||'') + 'api.php?action=logout', { credentials: 'include' });
     } catch (e) {
       console.error(e);
-      this.showToast('Erreur lors de la déconnexion', 'error');
     }
+    this.state.currentUser = null;
+    window.location.href = 'login.php?msg=logout_success';
   },
 
   // -------------------------------------------------------------

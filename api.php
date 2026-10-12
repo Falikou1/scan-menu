@@ -233,8 +233,22 @@ function getCurrentUser() {
     }
 
     if (!empty($_SESSION['user_id'])) {
+        $userId = $_SESSION['user_id'];
+
+        // Vérifier si cet utilisateur a été supprimé (session invalidée)
+        $invalidatedFile = __DIR__ . '/data/invalidated_sessions.json';
+        if (file_exists($invalidatedFile)) {
+            $invalidated = json_decode(file_get_contents($invalidatedFile), true) ?: [];
+            if (isset($invalidated[$userId])) {
+                // Détruire la session de cet utilisateur supprimé
+                session_unset();
+                session_destroy();
+                return null;
+            }
+        }
+
         foreach ($users as $u) {
-            if ($u['id'] === $_SESSION['user_id']) {
+            if ($u['id'] === $userId) {
                 unset($u['password_hash']);
                 return $u;
             }
@@ -244,6 +258,7 @@ function getCurrentUser() {
     // Aucun utilisateur connecté par défaut (sécurité : pas d'auto-connexion en Admin)
     return null;
 }
+
 
 // --- GOOGLE PLACES API SYNC ENGINE ---
 
@@ -478,47 +493,10 @@ function calculateStats($restaurants) {
 
 $action = $_GET['action'] ?? 'restaurants';
 
-// CONFIGURATION ENDPOINTS
-if ($action === 'get_config') {
-    $cfg = getConfig();
-    unset($cfg['google_maps_api_key_masked']);
-    $cfg['has_key'] = !empty($cfg['google_maps_api_key']) || !empty(getenv('GOOGLE_MAPS_API_KEY'));
-    echo json_encode(['success' => true, 'config' => $cfg]);
-    exit;
-}
+// ========================================================
+// AUTH ACTIONS (PUBLIC: LOGIN, REGISTER, LOGOUT, ME)
+// ========================================================
 
-if ($action === 'save_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $currentUser = getCurrentUser();
-    if (!$currentUser || ($currentUser['role'] ?? '') !== 'ADMIN') {
-        echo json_encode(['success' => false, 'error' => 'Action réservée aux Administrateurs']);
-        exit;
-    }
-    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-    $key = trim($input['google_maps_api_key'] ?? '');
-
-    $cfg = getConfig();
-    $cfg['google_maps_api_key'] = $key;
-    saveConfig($cfg);
-
-    echo json_encode(['success' => true, 'message' => 'Configuration Google Maps enregistrée avec succès !']);
-    exit;
-}
-
-// GOOGLE PLACES LIVE SYNC
-if ($action === 'sync_commune_places' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-    $commune = trim($input['commune'] ?? 'Cocody');
-
-    $syncResult = fetchGooglePlacesForCommune($commune);
-    $restaurants = getRestaurants();
-    $syncResult['stats'] = calculateStats($restaurants);
-    $syncResult['restaurants'] = $restaurants;
-
-    echo json_encode($syncResult);
-    exit;
-}
-
-// AUTH ACTIONS
 if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
     
@@ -531,13 +509,21 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($role, ['ADMIN', 'AGENT'])) $role = 'AGENT';
 
     if (!$name || !$email || !$password) {
+        http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Veuillez remplir tous les champs obligatoires (Nom, Email, Mot de passe).']);
+        exit;
+    }
+
+    if (strlen($password) < 6) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Le mot de passe doit comporter au moins 6 caractères.']);
         exit;
     }
 
     $users = getUsers();
     foreach ($users as $u) {
         if (strtolower($u['email']) === $email) {
+            http_response_code(409);
             echo json_encode(['success' => false, 'error' => 'Un compte existe déjà avec cette adresse email.']);
             exit;
         }
@@ -559,6 +545,9 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'email' => $email,
         'phone' => $phone,
         'role' => $role,
+        'assigned_communes' => $role === 'ADMIN' 
+            ? ['Cocody', 'Marcory', 'Plateau', 'Yopougon', 'Treichville', 'Koumassi', 'Port-Bouët'] 
+            : ['Cocody'],
         'password_hash' => password_hash($password, PASSWORD_DEFAULT),
         'created_at' => date('Y-m-d H:i:s')
     ];
@@ -566,8 +555,13 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $users[] = $newUser;
     saveUsers($users);
 
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_regenerate_id(true);
+    }
     $_SESSION['user_id'] = $newUser['id'];
     $_SESSION['logged_out'] = false;
+
+    logActivity('REGISTER', "Nouvel utilisateur inscrit : {$name} ({$role})", ['user_id' => $newUser['id'], 'email' => $email]);
 
     unset($newUser['password_hash']);
     echo json_encode(['success' => true, 'message' => 'Compte créé avec succès !', 'user' => $newUser]);
@@ -581,6 +575,7 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = trim($input['password'] ?? '');
 
     if (!$email || !$password) {
+        http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Email et mot de passe requis.']);
         exit;
     }
@@ -612,7 +607,6 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($knownPasswords as $kp) {
                     if (hash_equals($kp, $password)) {
                         $isValid = true;
-                        // Régénérer le hash proprement
                         $u['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
                         saveUsers($users);
                         break;
@@ -621,35 +615,122 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($isValid) {
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    session_regenerate_id(true);
+                }
                 $_SESSION['user_id'] = $u['id'];
                 $_SESSION['logged_out'] = false;
+
                 $userData = $u;
                 unset($userData['password_hash']);
+
+                logActivity('LOGIN', "Connexion réussie de {$userData['name']}", ['email' => $email, 'role' => $userData['role']]);
+
                 echo json_encode(['success' => true, 'message' => 'Connexion réussie', 'user' => $userData]);
                 exit;
             }
         }
     }
 
+    http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Email ou mot de passe incorrect.']);
     exit;
 }
 
 if ($action === 'logout') {
-    // Détruire la session actuelle proprement
-    session_unset();
+    $u = getCurrentUser();
+    if ($u) {
+        logActivity('LOGOUT', "Déconnexion de {$u['name']}", ['user_id' => $u['id']]);
+    }
+    // Nettoyer complètement la session
+    $_SESSION = [];
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
     session_destroy();
-    // Démarrer une nouvelle session vierge et poser le flag de déconnexion
     session_start();
     $_SESSION['logged_out'] = true;
     $_SESSION['user_id'] = null;
-    echo json_encode(['success' => true, 'message' => 'Déconnexion effectuée']);
+    echo json_encode(['success' => true, 'message' => 'Déconnexion effectuée avec succès']);
     exit;
 }
 
 if ($action === 'me') {
     $currentUser = getCurrentUser();
     echo json_encode(['success' => true, 'user' => $currentUser]);
+    exit;
+}
+
+// ========================================================
+// CONTRÔLE D'ACCÈS GLOBAL (AUTHENTIFICATION OBLIGATOIRE)
+// ========================================================
+$currentUser = getCurrentUser();
+if (!$currentUser) {
+    http_response_code(401);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Authentification requise. Veuillez vous connecter pour accéder aux données et fonctionnalités.',
+        'auth_required' => true
+    ]);
+    exit;
+}
+
+// ========================================================
+// CONTRÔLE D'ACCÈS ADMIN (RÔLE OBLIGATOIRE)
+// ========================================================
+$adminOnlyActions = [
+    'users', 'save_config', 'sync_commune_places', 'migrate_geocode_schema',
+    'geocode_batch', 'activity_logs', 'toggle_user_commune', 'update_user_role',
+    'delete_user', 'create_user', 'reset_user_password', 'reset_system', 'reset_visits'
+];
+
+if (in_array($action, $adminOnlyActions)) {
+    if (($currentUser['role'] ?? '') !== 'ADMIN') {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Accès refusé. Droits Administrateur requis.'
+        ]);
+        exit;
+    }
+}
+
+// CONFIGURATION ENDPOINTS
+if ($action === 'get_config') {
+    $cfg = getConfig();
+    unset($cfg['google_maps_api_key_masked']);
+    $cfg['has_key'] = !empty($cfg['google_maps_api_key']) || !empty(getenv('GOOGLE_MAPS_API_KEY'));
+    echo json_encode(['success' => true, 'config' => $cfg]);
+    exit;
+}
+
+if ($action === 'save_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $key = trim($input['google_maps_api_key'] ?? '');
+
+    $cfg = getConfig();
+    $cfg['google_maps_api_key'] = $key;
+    saveConfig($cfg);
+
+    echo json_encode(['success' => true, 'message' => 'Configuration Google Maps enregistrée avec succès !']);
+    exit;
+}
+
+// GOOGLE PLACES LIVE SYNC
+if ($action === 'sync_commune_places' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $commune = trim($input['commune'] ?? 'Cocody');
+
+    $syncResult = fetchGooglePlacesForCommune($commune);
+    $restaurants = getRestaurants();
+    $syncResult['stats'] = calculateStats($restaurants);
+    $syncResult['restaurants'] = $restaurants;
+
+    echo json_encode($syncResult);
     exit;
 }
 
@@ -1055,7 +1136,7 @@ if ($action === 'delete_visit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-if ($action === 'reset_system' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($action === 'reset_system' || $action === 'reset_visits') && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentUser = getCurrentUser();
     if (!$currentUser || ($currentUser['role'] ?? '') !== 'ADMIN') {
         echo json_encode(['success' => false, 'error' => 'Action réservée aux Administrateurs']);
@@ -1608,6 +1689,66 @@ if ($action === 'reset_user_password' && $_SERVER['REQUEST_METHOD'] === 'POST') 
     saveUsers($users);
     logActivity('password_reset', "Mot de passe réinitialisé pour l'utilisateur $userId", ['user_id' => $userId]);
     echo json_encode(['success' => true, 'message' => 'Mot de passe réinitialisé !', 'new_password' => $newPassword]);
+    exit;
+}
+
+// DELETE USER (ADMIN ONLY)
+if ($action === 'delete_user' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $currentUser = getCurrentUser();
+    if (!$currentUser || ($currentUser['role'] ?? '') !== 'ADMIN') {
+        echo json_encode(['success' => false, 'error' => 'Action réservée aux Administrateurs']);
+        exit;
+    }
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $userId = trim($input['user_id'] ?? '');
+
+    if (!$userId) {
+        echo json_encode(['success' => false, 'error' => 'Identifiant utilisateur requis']);
+        exit;
+    }
+
+    // Empêcher l'admin de se supprimer lui-même
+    if ($userId === $currentUser['id']) {
+        echo json_encode(['success' => false, 'error' => 'Vous ne pouvez pas supprimer votre propre compte.']);
+        exit;
+    }
+
+    $users = getUsers();
+    $found = false;
+    $deletedUserName = '';
+    $newUsers = [];
+    foreach ($users as $u) {
+        if ($u['id'] === $userId) {
+            $found = true;
+            $deletedUserName = $u['name'] ?? $userId;
+        } else {
+            $newUsers[] = $u;
+        }
+    }
+
+    if (!$found) {
+        echo json_encode(['success' => false, 'error' => 'Utilisateur introuvable']);
+        exit;
+    }
+
+    saveUsers($newUsers);
+
+    // Invalider la session de l'utilisateur supprimé s'il est connecté
+    // (on pose un flag dans un fichier de sessions invalidées)
+    $invalidatedFile = __DIR__ . '/data/invalidated_sessions.json';
+    $invalidated = [];
+    if (file_exists($invalidatedFile)) {
+        $invalidated = json_decode(file_get_contents($invalidatedFile), true) ?: [];
+    }
+    $invalidated[$userId] = date('Y-m-d H:i:s');
+    // Garder seulement les 200 derniers pour ne pas grossir le fichier
+    if (count($invalidated) > 200) {
+        $invalidated = array_slice($invalidated, -200, 200, true);
+    }
+    file_put_contents($invalidatedFile, json_encode($invalidated, JSON_PRETTY_PRINT));
+
+    logActivity('user_deleted', "Suppression du compte de $deletedUserName par l'administrateur", ['user_id' => $userId, 'name' => $deletedUserName]);
+    echo json_encode(['success' => true, 'message' => "Compte de $deletedUserName supprimé avec succès."]);
     exit;
 }
 
